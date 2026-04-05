@@ -1,0 +1,94 @@
+# Offboard — Wrapping Up a Session
+
+Follow these priorities in order when ending a session or when context is running low.
+
+**Constraints:** Near-full context means limited tool calls. Write from memory — do NOT read files to gather information. You already have the context from the session.
+
+**One exception:** Reading the existing SESSION_STATE.md itself is allowed — you need it to preserve "What's Done" entries from earlier sessions. This is the only file you should read during offboard.
+
+---
+
+## Priority 1 — Write SESSION_STATE.md (MUST)
+
+This is non-negotiable. Every session must end with an updated SESSION_STATE.md.
+
+**Path:** Use the project's configured path (see SKILL.md "Project Configuration"). Default: `context/SESSION_STATE.md`. Create the `context/` directory if it doesn't exist.
+
+**Process:**
+
+1. Read the existing SESSION_STATE.md (if it exists) to preserve "What's Done" entries from earlier sessions
+2. Update it with current session state using the template from SKILL.md — write everything else from memory
+3. Write the file
+
+### Section-specific guidance
+
+**Task:** Use taskmaster ID + title if available. Otherwise, free-text description of what you were working on.
+
+**Branch:** The git branch name. You know this from the session.
+
+**Status:** One word — `planning`, `implementing`, `testing`, `debugging`, or `blocked`.
+
+**What's Done:** Graduate any `[x]` items from the Work Checklist here. One line per file: backtick-wrapped path + short phrase. If continuing from a previous session, preserve earlier entries unless the overall task is fully complete.
+
+**Work Checklist:** Only `[ ]` and `[-]` items. If you completed a file this session, it should NOT be here — move it to What's Done. Be specific about partial progress: "PATCH done, DELETE not started" is useful; "in progress" is not.
+
+**What's Next:** Ordered list of immediate next steps. Be specific enough that the next agent knows exactly where to start.
+
+**Failed Approaches:** This is the highest-value section. Without it, the next agent repeats your mistakes. Include:
+- What you tried
+- What went wrong
+- **WHY** it failed (root cause)
+- Any relevant error messages or observations
+
+**Uncommitted Changes:** One of:
+- "All committed" — clean working tree
+- "Stashed as: session: `<description>`" — if you stashed
+- Description of dirty state — what files are modified and why they aren't committed
+
+**Decisions & Open Questions:** Second highest-value section. Include:
+- Architectural decisions made during this session and their reasoning
+- User preferences or instructions that affect implementation
+- Open questions that still need user input
+- Any constraints discovered during implementation
+
+**Docs That May Need Updating:** Only include if code changes this session invalidated documentation. Reference doc name + what changed. The doc list should come from whatever docs the project maintains (often listed in CLAUDE.md's context table or similar). Don't guess — only flag docs you know are stale.
+
+---
+
+## Priority 2 — Update Taskmaster (SHOULD)
+
+Skip entirely if `.taskmaster/` doesn't exist.
+
+If taskmaster is available:
+
+- Set current task/subtask status (`in-progress`, `done`, `blocked`)
+- Log notes via `update_subtask` if meaningful implementation context exists
+- Mark blockers with details
+
+This is "should" not "must" — if context is critically low, SESSION_STATE.md is sufficient. Taskmaster can be updated at the start of the next session.
+
+---
+
+## Priority 3 — Update Context Docs (ONLY IF TOKENS ALLOW)
+
+Only do this if you have remaining context budget. If not, the "Docs That May Need Updating" section in SESSION_STATE.md handles the handoff.
+
+- Check if any project documentation is now stale due to this session's code changes
+- Look for doc references in the project's CLAUDE.md (context tables, doc lists, etc.)
+- Don't restructure docs — just patch to match reality
+- Ask user: "Update docs now, or defer to next session?"
+
+Common docs that go stale:
+- File/folder structure docs — when new files or folders are added
+- Schema/database docs — when tables, columns, or relationships change
+- Test inventory docs — when tests are added, removed, or changed
+- README/setup docs — when env vars or setup steps change
+
+---
+
+## Priority 4 — Report
+
+No tool call needed — just output text to the user:
+
+- 2-3 line summary: what's done, what's next, anything needing user input
+- Keep it brief — the user can read SESSION_STATE.md for details
