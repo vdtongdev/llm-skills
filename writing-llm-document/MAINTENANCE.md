@@ -7,6 +7,7 @@
 | Writing rules (use/avoid) | `references/style-guide.md` | Writing Rules |
 | Verbose → concise pairs | `references/style-guide.md` | Conciseness |
 | Bad documentation examples | `references/style-guide.md` | Anti-Patterns |
+| Anti-pattern entry writing rules | `references/style-guide.md` | Writing Anti-Pattern Entries |
 | Trigger/scope changes | `SKILL.md` | When This Applies |
 | Process changes | `SKILL.md` | Process |
 | Checklist changes | `references/style-guide.md` | Quick Checklist |

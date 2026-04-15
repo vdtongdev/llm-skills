@@ -101,6 +101,19 @@ Same content in FILE_STRUCTURE.md and TESTING.md
 "Step 3: Implement auth (2 hours)"
 ```
 
+## Writing Anti-Pattern Entries
+
+When writing entries for anti-pattern files (wrong/right code pairs):
+
+1. **Heading = trigger keyword.** "Don't use `networkidle`" not "Synchronization Issue #3". The heading must match what the LLM is thinking when it's about to write the bad code.
+2. **Bad code must look real.** The exact code the LLM would produce. Not pseudocode, not abstractions.
+3. **Good code must be a drop-in replacement.** If the LLM has to adapt it, errors follow.
+4. **One problem per entry.** One trigger, one fix.
+5. **Why = consequence, not lecture.** "Matches GET instead of POST → race condition" not "This is considered bad practice."
+6. **Scope tag required.** "E2E (Playwright)", "Backend (pytest)", "All tests". Prevents over-application.
+7. **No duplication across files.** Each anti-pattern in exactly one file. Other files cross-reference.
+8. **No backstory.** "On 2026-01-27 we spent 3 hours..." is wasted tokens. The LLM needs the pattern, not the history.
+
 ## Quick Checklist
 
 Before saving any doc update:
