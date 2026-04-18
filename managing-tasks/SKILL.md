@@ -58,7 +58,8 @@ Integration shapes (per command):
 - `task new` → `{contract_version, id, uid, file}`
 - `task import` → `{contract_version, label_map: {<label>: <id>}, created: <n>}`
 - `task list [--compact]` → multi-line text (not YAML). Parse line-by-line if needed.
-- `task show <id>` / `task why <id>` → YAML detail.
+- `task show <id>` → YAML detail (all fields + `archived: bool`).
+- `task why <id>` → multi-line text: title, goal, source list. Not YAML.
 - Mutation commands → `{contract_version, id, ...delta}`.
 
 Full per-command schemas: `references/integration-contract.md`.
@@ -76,7 +77,7 @@ Every task file: `schema: 1` at top; `uid` (ULID, immutable), `id` (human-readab
 - `add-dep` that retroactively invalidates a `done` task is rejected — reopen first.
 - `cancel` with active dependents is rejected without `--force`.
 - `archive` refuses tasks referenced by active deps.
-- `list` tolerates malformed task files (one `[?] INVALID` row per file); every other command hitting a malformed file exits 1.
+- `list` tolerates malformed task files (one `[?] INVALID` row per file); every other command hitting a malformed file returns exit 2 (not found) or exit 1 (internal error) depending on whether the malformed file is the target.
 
 ## Schema migration
 

@@ -74,20 +74,23 @@ export async function main(argv, { cwd }) {
 }
 
 async function cmdInit(cwd) {
-  const tasksDir = join(cwd, ".tasks");
-  const cacheDir = join(tasksDir, ".cache");
-  await mkdir(cacheDir, { recursive: true });
+  const { withLock } = await import("./storage.mjs");
+  return withLock(cwd, {}, async () => {
+    const tasksDir = join(cwd, ".tasks");
+    const cacheDir = join(tasksDir, ".cache");
+    await mkdir(cacheDir, { recursive: true });
 
-  const gi = join(cwd, ".gitignore");
-  const line = ".tasks/.cache/";
-  let content = "";
-  if (existsSync(gi)) content = await readFile(gi, "utf8");
-  if (!content.split(/\r?\n/).some((l) => l.trim() === line)) {
-    const sep = content && !content.endsWith("\n") ? "\n" : "";
-    await appendFile(gi, `${sep}${line}\n`);
-  }
-  await rebuildCache(cwd);
-  return { contract_version: 1, ok: true, tasks_dir: ".tasks" };
+    const gi = join(cwd, ".gitignore");
+    const line = ".tasks/.cache/";
+    let content = "";
+    if (existsSync(gi)) content = await readFile(gi, "utf8");
+    if (!content.split(/\r?\n/).some((l) => l.trim() === line)) {
+      const sep = content && !content.endsWith("\n") ? "\n" : "";
+      await appendFile(gi, `${sep}${line}\n`);
+    }
+    await rebuildCache(cwd);
+    return { contract_version: 1, ok: true, tasks_dir: ".tasks" };
+  });
 }
 
 function parseArgs(argv) {

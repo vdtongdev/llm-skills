@@ -85,7 +85,12 @@ export async function cmdDeps(cwd, args) {
 export async function cmdGrep(cwd, args) {
   const pattern = args._[0];
   if (!pattern) throw new ValidationError("task grep <pattern>");
-  const re = new RegExp(pattern, "i");
+  let re;
+  try {
+    re = new RegExp(pattern, "i");
+  } catch {
+    throw new ValidationError(`invalid regex: ${pattern}`);
+  }
   return withLock(cwd, {}, async () => {
     const all = await scanTasks(cwd, { includeArchived: true });
     const hits = all.filter((t) => {

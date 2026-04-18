@@ -1,6 +1,7 @@
 // Mutation commands: set-status, edit, add/rm (file, dep, subtask, note, test, source), move, rm, cancel, reopen.
 
-import { readFile, rename, rm } from "node:fs/promises";
+import { readFile, rename, rm, stat } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import YAML from "yaml";
 import { atomicWrite, withLock } from "../storage.mjs";
@@ -41,6 +42,7 @@ export async function cmdSetStatus(cwd, args) {
   return withLock(cwd, {}, async () => {
     const all = await loadAll(cwd);
     const t = assertFound(all, id);
+    if (t.archived) throw new ValidationError(`task ${id} is archived; reopen it first`, 4);
     if (status === "done" && !args.force) {
       if (t.subtasks?.some((s) => !TERMINAL.has(s.status))) {
         throw new ValidationError(`task ${id} has open subtasks (use --force)`, 4);
@@ -66,6 +68,7 @@ export async function cmdEdit(cwd, args) {
   return withLock(cwd, {}, async () => {
     const all = await loadAll(cwd);
     const t = assertFound(all, id);
+    if (t.archived) throw new ValidationError(`task ${id} is archived; reopen it first`, 4);
     const data = raw(t);
     if (args.title) data.title = args.title;
     if (args.goal) data.goal = args.goal;
@@ -111,10 +114,12 @@ export async function cmdAddDep(cwd, args) {
   return withLock(cwd, {}, async () => {
     const all = await loadAll(cwd);
     const t = assertFound(all, id);
+    if (t.archived) throw new ValidationError(`task ${id} is archived; reopen it first`, 4);
     const dep = assertFound(all, depId);
     if (dep.status === "cancelled") throw new ValidationError(`dep ${depId} is cancelled`, 4);
     if (dep.archived) throw new ValidationError(`dep ${depId} is archived`, 4);
     if (id === depId) throw new ValidationError("self-dep", 4);
+    if ((t.depends_on || []).includes(depId)) throw new ValidationError(`dep ${depId} already on task ${id}`, 4);
     // cycle check
     const graph = new Map(all.map((x) => [x.id, new Set(x.depends_on || [])]));
     graph.get(id).add(depId);
@@ -149,9 +154,11 @@ export async function cmdAddSubtask(cwd, args) {
   const [id, subId, ...titleParts] = args._;
   const title = titleParts.join(" ");
   if (!id || !subId || !title) throw new ValidationError("task add-subtask <id> <sub-id> <title> [--kind <k>]");
+  const fullId = `${id}.${subId}`;
   return mutate(cwd, id, (data) => {
     data.subtasks = data.subtasks || [];
-    const s = { id: String(subId), status: "pending", title };
+    if (data.subtasks.some((s) => s.id === fullId)) throw new ValidationError(`subtask ${fullId} already exists`, 4);
+    const s = { id: fullId, status: "pending", title };
     if (args.kind) s.kind = args.kind;
     data.subtasks.push(s);
   });
@@ -160,9 +167,10 @@ export async function cmdAddSubtask(cwd, args) {
 export async function cmdEditSubtask(cwd, args) {
   const [id, subId] = args._;
   if (!id || !subId) throw new ValidationError("task edit-subtask <id> <sub-id> [--status ...] [--title ...]");
+  const fullId = subId.includes(".") ? subId : `${id}.${subId}`;
   return mutate(cwd, id, (data) => {
-    const s = (data.subtasks || []).find((x) => x.id === subId);
-    if (!s) throw new ValidationError(`subtask ${subId} not found`, 2);
+    const s = (data.subtasks || []).find((x) => x.id === fullId);
+    if (!s) throw new ValidationError(`subtask ${fullId} not found`, 2);
     if (args.status) {
       if (!STATUSES.has(args.status)) throw new ValidationError(`unknown status ${args.status}`);
       s.status = args.status;
@@ -220,11 +228,16 @@ export async function cmdMove(cwd, args) {
     if (nextPrefix && nextPrefix - anchor.prefix < 2) {
       throw new ValidationError(`no prefix gap between ${anchor.prefix} and ${nextPrefix}; run 'task renumber'`, 4);
     }
+    if (t.archived) throw new ValidationError(`task ${id} is archived; reopen it first`, 4);
+    if (anchor.archived) throw new ValidationError(`anchor task ${after} is archived`, 4);
     const newPrefix = String(anchor.prefix + 1).padStart(3, "0");
     const slug = t.file.replace(/^\d+-/, "").replace(/\.yaml$/, "");
     const newName = `${newPrefix}-${slug}.yaml`;
     const oldPath = taskFilePath(cwd, t);
     const newPath = join(cwd, TASKS_DIR, newName);
+    if (newPath !== oldPath && existsSync(newPath)) {
+      throw new ValidationError(`${newName} already exists; run 'task renumber' to make space`, 4);
+    }
     await rename(oldPath, newPath);
     await refreshCache(cwd);
     return { contract_version: 1, id: t.id, moved_to: newName };
@@ -268,8 +281,23 @@ export async function cmdCancel(cwd, args) {
 export async function cmdReopen(cwd, args) {
   const id = args._[0];
   if (!id) throw new ValidationError("task reopen <id>");
-  return mutate(cwd, id, (data) => {
+  return withLock(cwd, {}, async () => {
+    const all = await loadAll(cwd);
+    const t = assertFound(all, id);
+    const data = raw(t);
     data.status = "pending";
+    if (t.archived) {
+      // move file back from archive to active tasks dir
+      const from = taskFilePath(cwd, t);
+      const to = join(cwd, TASKS_DIR, t.file);
+      if (existsSync(to)) throw new ValidationError(`${t.file} already exists in .tasks/; rename manually`, 4);
+      await rename(from, to);
+      await save(cwd, data, to);
+    } else {
+      await save(cwd, data, taskFilePath(cwd, t));
+    }
+    await refreshCache(cwd);
+    return { contract_version: 1, id: t.id, status: "pending" };
   });
 }
 
@@ -277,6 +305,7 @@ async function mutate(cwd, id, transform) {
   return withLock(cwd, {}, async () => {
     const all = await loadAll(cwd);
     const t = assertFound(all, id);
+    if (t.archived) throw new ValidationError(`task ${id} is archived; reopen it first`, 4);
     const data = raw(t);
     transform(data);
     await save(cwd, data, taskFilePath(cwd, t));
