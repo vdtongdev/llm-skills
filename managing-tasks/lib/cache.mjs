@@ -8,11 +8,11 @@ import { atomicWrite } from "./storage.mjs";
 import { validateTaskFile, SCHEMA_VERSION } from "./schema.mjs";
 
 export const TASKS_DIR = ".tasks";
-export const ARCHIVE_DIR = ".tasks/archive";
+export const ARCHIVE_DIR = ".tasks/archived";
 export const CACHE_FILE = ".tasks/.cache/index.yaml";
 
 /**
- * Read all .yaml task files from .tasks/ (and optionally .tasks/archive/).
+ * Read all .yaml task files from .tasks/ (and optionally .tasks/archived/).
  * Returns an array sorted by filename prefix; invalid files are included with status "invalid".
  */
 export async function scanTasks(cwd, { includeArchived = false } = {}) {
@@ -23,10 +23,9 @@ export async function scanTasks(cwd, { includeArchived = false } = {}) {
   for (const dir of dirs) {
     if (!existsSync(dir)) continue;
     const entries = await readdir(dir);
-    const archived = dir.endsWith("archive");
+    const archived = dir.endsWith("archived");
     for (const name of entries) {
       if (!name.endsWith(".yaml") || name.startsWith(".")) continue;
-      if (!archived && name === "archive") continue;
       const m = name.match(/^(\d+)-(.+)\.yaml$/);
       const prefix = m ? parseInt(m[1], 10) : null;
       const path = join(dir, name);

@@ -167,7 +167,7 @@ All lifecycle commands use the 60s maintenance timeout.
 
 ### `task archive --id <id> | --older-than <days>`
 
-Moves file(s) to `.tasks/archive/`. Refuses (exit 4) any target referenced by an active (non-terminal) task's `depends_on`.
+Moves file(s) to `.tasks/archived/`. Refuses (exit 4) any target referenced by an active (non-terminal) task's `depends_on`.
 
 `--older-than <days>`: selects `done` tasks with `mtime < now - days*86400s`.
 
@@ -175,7 +175,7 @@ Output: `{contract_version: 1, archived: [<ids>]}`.
 
 ### `task reindex`
 
-Scans `.tasks/` and `.tasks/archive/`, rebuilds `.tasks/.cache/index.yaml`.
+Scans `.tasks/` and `.tasks/archived/`, rebuilds `.tasks/.cache/index.yaml`.
 
 Output: `{contract_version: 1, indexed: <count>}`.
 

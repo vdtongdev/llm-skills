@@ -14,7 +14,7 @@ export async function cmdList(cwd, args) {
       const statuses = new Set(String(args.status).split(","));
       tasks = tasks.filter((t) => statuses.has(t.status));
     } else if (!args.all && !args.archived) {
-      tasks = tasks.filter((t) => !TERMINAL.has(t.status) || t.status === "invalid");
+      tasks = tasks.filter((t) => !TERMINAL.has(t.status));
     }
     if (args.touching) {
       tasks = tasks.filter((t) => t.files?.some((f) => f.path.includes(String(args.touching))));

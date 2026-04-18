@@ -302,6 +302,88 @@ test("cli: rm-dep removes correct uid when dep is not last", async () => {
   }
 });
 
+test("cli: grep matches on title and goal", async () => {
+  const dir = await scratch();
+  try {
+    await runCLI(dir, "init");
+    await writeFile(join(dir, "b.yaml"), YAML.stringify({
+      schema: 1,
+      tasks: [
+        { label: "a", title: "implement auth", goal: "oauth2 flow" },
+        { label: "b", title: "write tests", goal: "coverage" },
+      ],
+    }));
+    await runCLI(dir, "import", "b.yaml");
+    const r = await runCLI(dir, "grep", "oauth");
+    assert.equal(r.code, 0);
+    assert.match(r.out, /implement auth/);
+    assert.doesNotMatch(r.out, /write tests/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("cli: why shows goal and sources", async () => {
+  const dir = await scratch();
+  try {
+    await runCLI(dir, "init");
+    await writeFile(join(dir, "b.yaml"), YAML.stringify({
+      schema: 1,
+      tasks: [{ label: "a", title: "t1", goal: "do the thing", sources: [{ kind: "prd", ref: "spec.md#s1" }] }],
+    }));
+    await runCLI(dir, "import", "b.yaml");
+    const r = await runCLI(dir, "why", "1");
+    assert.equal(r.code, 0);
+    assert.match(r.out, /do the thing/);
+    assert.match(r.out, /prd: spec\.md#s1/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("cli: add-source accepts multiple --source flags", async () => {
+  const dir = await scratch();
+  try {
+    await runCLI(dir, "init");
+    await writeFile(join(dir, "b.yaml"), YAML.stringify({ schema: 1, tasks: [{ label: "a", title: "t1" }] }));
+    await runCLI(dir, "import", "b.yaml");
+    const r = await runCLI(dir, "add-source", "1", "--source", "kind=prd,ref=a.md", "--source", "kind=issue,ref=gh#1");
+    assert.equal(r.code, 0);
+    const show = await runCLI(dir, "show", "1");
+    assert.match(show.out, /prd/);
+    assert.match(show.out, /issue/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("cli: reopen archived task moves file back and sets pending", async () => {
+  const dir = await scratch();
+  try {
+    await runCLI(dir, "init");
+    await writeFile(join(dir, "b.yaml"), YAML.stringify({ schema: 1, tasks: [{ label: "a", title: "t1" }] }));
+    await runCLI(dir, "import", "b.yaml");
+    await runCLI(dir, "set-status", "1", "done");
+    await runCLI(dir, "archive", "--id", "1");
+    const r = await runCLI(dir, "reopen", "1");
+    assert.equal(r.code, 0);
+    const show = await runCLI(dir, "show", "1");
+    assert.match(show.out, /status: pending/);
+    // file must be back in .tasks/, not in .tasks/archived/
+    assert.ok(!existsSync(join(dir, ".tasks/archived/010-t1.yaml")));
+    assert.ok(existsSync(join(dir, ".tasks/010-t1.yaml")));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("schema: schema version too new exits 6", () => {
+  assert.throws(
+    () => validateTaskFile({ schema: 99, uid: "U", id: "1", title: "t", status: "pending" }),
+    (err) => err.exitCode === 6,
+  );
+});
+
 test("cli: archive refuses if referenced by active", async () => {
   const dir = await scratch();
   try {

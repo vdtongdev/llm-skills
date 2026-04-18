@@ -219,13 +219,13 @@ export async function cmdAddTest(cwd, args) {
   });
 }
 
-/** Append a source entry (parsed from --source 'kind=..,ref=..'). */
+/** Append a source entry (parsed from --source 'kind=..,ref=..'). Supports multiple --source flags. */
 export async function cmdAddSource(cwd, args) {
   const [id] = args._;
   if (!id || !args.source) throw new ValidationError("task add-source <id> --source 'kind=..,ref=..'");
-  const src = parseSourceString(args.source);
+  const srcs = [].concat(args.source).filter(Boolean).map(parseSourceString);
   return mutate(cwd, id, (data) => {
-    data.sources = [...(data.sources || []), src];
+    data.sources = [...(data.sources || []), ...srcs];
   });
 }
 
@@ -258,6 +258,7 @@ export async function cmdMove(cwd, args) {
     }
     if (t.archived) throw new ValidationError(`task ${id} is archived; reopen it first`, 4);
     if (anchor.archived) throw new ValidationError(`anchor task ${after} is archived`, 4);
+    if (anchor.prefix == null) throw new ValidationError(`anchor task ${after} has no numeric prefix; rename manually`, 4);
     const newPrefix = String(anchor.prefix + 1).padStart(3, "0");
     const slug = t.file.replace(/^\d+-/, "").replace(/\.yaml$/, "");
     const newName = `${newPrefix}-${slug}.yaml`;
@@ -311,7 +312,7 @@ export async function cmdCancel(cwd, args) {
 /**
  * Set status to "pending".
  * Blocks if any dependency is cancelled (override with --force).
- * If the task is archived, moves the file back from .tasks/archive/ to .tasks/.
+ * If the task is archived, moves the file back from .tasks/archived/ to .tasks/.
  */
 export async function cmdReopen(cwd, args) {
   const id = args._[0];
@@ -328,12 +329,12 @@ export async function cmdReopen(cwd, args) {
     const data = raw(t);
     data.status = "pending";
     if (t.archived) {
-      // move file back from archive to active tasks dir
       const from = taskFilePath(cwd, t);
       const to = join(cwd, TASKS_DIR, t.file);
       if (existsSync(to)) throw new ValidationError(`${t.file} already exists in .tasks/; rename manually`, 4);
-      await rename(from, to);
+      // write to active dir first (atomic), then remove archive copy — avoids stale-status window
       await save(cwd, data, to);
+      await rm(from, { force: true });
     } else {
       await save(cwd, data, taskFilePath(cwd, t));
     }

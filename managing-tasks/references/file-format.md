@@ -1,6 +1,6 @@
 # Task File Format
 
-Every task is one YAML file at `.tasks/<prefix>-<slug>.yaml`. Archived tasks sit at `.tasks/archive/<prefix>-<slug>.yaml`.
+Every task is one YAML file at `.tasks/<prefix>-<slug>.yaml`. Archived tasks sit at `.tasks/archived/<prefix>-<slug>.yaml`.
 
 ## Full example
 

@@ -8,7 +8,7 @@ import { scanTasks, writeCache, rebuildCache, taskFilePath, TASKS_DIR, ARCHIVE_D
 import { ValidationError, TERMINAL, SCHEMA_VERSION } from "../schema.mjs";
 
 /**
- * Move done tasks to .tasks/archive/.
+ * Move done tasks to .tasks/archived/.
  * Use --id for a single task or --older-than <days> for bulk by mtime.
  * Refuses if the target is still referenced by an active dependent.
  */

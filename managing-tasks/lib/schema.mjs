@@ -105,7 +105,7 @@ export function validateBatch(batch) {
 }
 
 /**
- * DFS cycle detection on the label→depends_on_labels graph.
+ * Iterative DFS cycle detection on the label→depends_on_labels graph.
  * @throws {ValidationError} exit 4 listing the cycle path
  */
 function detectLabelCycles(tasks) {
@@ -113,18 +113,32 @@ function detectLabelCycles(tasks) {
   for (const t of tasks) graph.set(t.label, t.depends_on_labels || []);
   const WHITE = 0, GRAY = 1, BLACK = 2;
   const color = new Map([...graph.keys()].map((k) => [k, WHITE]));
-  function dfs(node, stack) {
-    color.set(node, GRAY);
-    for (const next of graph.get(node) || []) {
-      if (!graph.has(next)) continue; // unresolved labels handled elsewhere
-      if (color.get(next) === GRAY) {
-        throw new ValidationError(`batch: cycle via labels: ${[...stack, next].join(" → ")}`, 4);
+  for (const start of graph.keys()) {
+    if (color.get(start) !== WHITE) continue;
+    const path = [start];
+    const stack = [[start, [...(graph.get(start) || [])]]];
+    color.set(start, GRAY);
+    while (stack.length) {
+      const frame = stack[stack.length - 1];
+      const neighbors = frame[1];
+      if (!neighbors.length) {
+        color.set(frame[0], BLACK);
+        stack.pop();
+        path.pop();
+        continue;
       }
-      if (color.get(next) === WHITE) dfs(next, [...stack, next]);
+      const next = neighbors.shift();
+      if (!graph.has(next)) continue;
+      if (color.get(next) === GRAY) {
+        throw new ValidationError(`batch: cycle via labels: ${[...path, next].join(" → ")}`, 4);
+      }
+      if (color.get(next) === WHITE) {
+        color.set(next, GRAY);
+        path.push(next);
+        stack.push([next, [...(graph.get(next) || [])]]);
+      }
     }
-    color.set(node, BLACK);
   }
-  for (const n of graph.keys()) if (color.get(n) === WHITE) dfs(n, [n]);
 }
 
 function requireString(obj, field, filename) {

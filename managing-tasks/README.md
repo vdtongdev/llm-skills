@@ -111,7 +111,7 @@ A task can be `blocked` at any stage — it stays in the active list but signals
 | Command | What it does | File kept? | Appears in history? | Use when |
 |---------|-------------|------------|---------------------|----------|
 | `task cancel <id>` | marks status=cancelled | Yes | Yes | work is abandoned but you want a record |
-| `task archive --id <id>` | moves file to `.tasks/archive/` | Yes (archived) | Yes | done task is cluttering the active list |
+| `task archive --id <id>` | moves file to `.tasks/archived/` | Yes (archived) | Yes | done task is cluttering the active list |
 | `task rm <id>` | deletes the file | No | No | task was created by mistake |
 
 `cancel` and `archive` are reversible (`task reopen` undoes both). `rm` is not.
