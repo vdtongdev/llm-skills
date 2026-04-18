@@ -99,7 +99,7 @@ For wrapping up a batch of work across multiple issues:
 git log --oneline --no-decorate
 glab issue list --all                # --all needed here to include closed issues
 # If task tracker configured:
-task-master list  # or equivalent
+task list  # or equivalent
 ```
 
 ### 2. Build Correlation Table

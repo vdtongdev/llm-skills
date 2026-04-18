@@ -41,18 +41,19 @@ bash ~/.claude/skills/preserving-session-memory/scripts/git-state.sh
 
 ---
 
-## Step 3 — Load Taskmaster (if available)
+## Step 3 — Load task tracker state (if available)
 
 Skip this step if:
-- `.taskmaster/` directory doesn't exist, OR
-- SESSION_STATE has no Task field or no taskmaster ID in it
+- `.tasks/` directory doesn't exist, OR
+- SESSION_STATE has no Task field or no tracker ID in it
 
-If taskmaster is available and a task ID exists:
+If the tracker is present and a task ID exists:
 
-1. `get_task` for the task ID from SESSION_STATE
-2. Check subtask statuses — some may already be marked `done` or `in-progress`
-3. Read `details` field for implementation notes logged by previous agent
-4. Cross-reference taskmaster status with SESSION_STATE — if they disagree, SESSION_STATE is more recent (written at end of last session)
+1. `task show <id>` — full detail including notes, subtasks, sources.
+2. Check subtask statuses — some may already be `done` or `in-progress`.
+3. Read `notes` entries for implementation context logged previously.
+4. `task list --ready` — surface tasks whose deps are satisfied.
+5. Cross-reference tracker output with SESSION_STATE. Tracker is authoritative on task state. If narrative (Failed Approaches, Decisions) conflicts, SESSION_STATE is more recent.
 
 ---
 

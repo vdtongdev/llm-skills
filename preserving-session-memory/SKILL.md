@@ -51,7 +51,7 @@ Both modes read and/or write this file. Use this exact structure:
 
 ## Task
 
-<taskmaster ID + title, or free-text description if no taskmaster>
+<task tracker ID + title (from `task show <id>`), or free-text description if no tracker>
 
 ## Branch
 
@@ -151,11 +151,12 @@ Second most valuable. Without this, the next agent may diverge from the intended
 - Reference the doc name and what changed (e.g., "FILE_STRUCTURE.md: added feature_a.ts")
 - The doc list comes from whatever the project's CLAUDE.md references — there is no hardcoded list
 
-## Taskmaster Integration
+## Task Tracker Integration
 
-Taskmaster is **optional**. Before using any taskmaster commands:
+The project may use `/managing-tasks` (YAML files under `.tasks/`). Tracker is authoritative on task state; SESSION_STATE is authoritative on narrative (Failed Approaches, Discussion Summary, Decisions & Open Questions).
 
-1. Check if `.taskmaster/` directory exists in the project root
-2. If it doesn't exist, skip all taskmaster-related steps
-3. If it exists, use `get_task`, `set_task_status`, `update_subtask` as described in the mode-specific reference files
+Skip every tracker step if `.tasks/` doesn't exist — no tracker, no derivation.
+
+- **Offboard** derives "What's Done" and "Work Checklist" from `task list` output; see `references/offboard.md` Priority 2.
+- **Onboard** reads `task list --ready` to surface next actionable work; see `references/onboard.md` Step 3.
 ```

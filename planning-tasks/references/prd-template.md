@@ -10,6 +10,49 @@ Use this structure when writing a PRD. Sections are examples — adapt to your p
 ## Overview
 What and why. Issue/ticket reference if applicable.
 
+## Context Primer
+Scoped to this PRD. Include only what's relevant to *this* feature.
+- What the app does (1-2 sentences)
+- Domain concepts the reviewer needs (e.g., "journal entries are double-entry accounting records; every entry must balance")
+- Existing patterns this feature will extend or deviate from
+- **Operational invariants when relevant**: auth model, consistency expectations, migration constraints, deployment topology, concurrency assumptions. Include only the ones this feature touches or depends on.
+
+Required. PRD must be self-contained — external reviewers (adversarial reviewer, future executors) read only this doc.
+
+## Breadth Checklist
+Subsystems this feature touches. One line each. Forces the author to consider adjacencies.
+
+Core rows (always include, write "none" if empty):
+- **Reads from:** [subsystem, model, or service]
+- **Writes to:** [subsystem, model, or service]
+- **User flows touched:** [flow name, even if only lightly]
+- **Shared utilities/models depended on:** [path or name]
+
+Conditional rows (include when relevant, omit when not):
+- **Authz/permissions:** who can invoke this, what changes
+- **Caching:** what gets cached, invalidation triggers
+- **Background jobs:** queues, workers, schedules touched
+- **Observability:** logs, metrics, traces this feature emits or depends on
+- **Migrations/backfills:** schema changes, data migrations required
+- **Config/feature flags:** flags introduced or gated behind
+- **Rate limits / quotas:** per-user, per-tenant, external API limits
+- **Rollback/recovery:** what breaks if this is reverted mid-rollout
+- **Versioning/backward compatibility:** API version bumps, client compatibility
+
+The author decides relevance. Adversarial reviewer will flag suspicious omissions.
+
+## Key Assumptions
+Things this plan depends on being true. Explicit list, not implied.
+- [Assumption] — why we believe it
+
+Adversarial reviewer targets this list. The more honest, the better the review.
+
+## Known Risks / Accepted Tradeoffs
+Risks the author already sees and accepts.
+- [Risk] — why accepting is fine
+
+Preempts weak adversarial findings. Forces the author to confront tradeoffs instead of hiding them.
+
 ## Current State
 What exists today. Reference exact files and functions.
 

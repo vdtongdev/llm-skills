@@ -24,7 +24,7 @@ Follow these priorities in order when ending a session or when context is runnin
 
 ### Section-specific guidance
 
-**Task:** Use taskmaster ID + title if available. Otherwise, free-text description of what were worked on.
+**Task:** Use tracker ID + title (from `task show <id>`) if `.tasks/` exists. Otherwise, free-text description.
 
 **Branch:** git branch name.
 
@@ -77,17 +77,26 @@ Follow these priorities in order when ending a session or when context is runnin
 
 ---
 
-## Priority 2 — Update Taskmaster (SHOULD)
+## Priority 2 — Sync task tracker (SHOULD)
 
-Skip entirely if `.taskmaster/` doesn't exist.
+Skip entirely if `.tasks/` doesn't exist.
 
-If taskmaster is available:
+**Update tracker state for work touched this session:**
 
-- Set current task/subtask status (`in-progress`, `done`, `blocked`)
-- Log notes via `update_subtask` if meaningful implementation context exists
-- Mark blockers with details
+- `task set-status <id> done` — completed top-level tasks
+- `task set-status <id> in-progress` / `blocked` — reflect current state
+- `task edit-subtask <parent-id> <sub-id> --status done` — subtask transitions
+- `task add-note <id> "<implementation context>"` — non-obvious details the next agent needs (one note per meaningful context chunk)
 
-This is "should" not "must" — if context is critically low, SESSION_STATE.md is sufficient. Taskmaster can be updated at the start of the next session.
+**Derive SESSION_STATE sections from tracker output:**
+
+- "What's Done" list: `task list --status done --compact` output, trimmed to this session's scope
+- "Work Checklist" list: `task list --status in-progress,pending,blocked --compact` output
+- Prepend each derived section with:
+  `<!-- Generated from task tracker; edit tasks via 'task' CLI, not this file -->`
+- Tracker is source of truth; manual edits to these sections are lost on next offboard
+
+This is "should" not "must" — if context is critically low, SESSION_STATE.md narrative is sufficient. Tracker can be updated at the start of the next session.
 
 ---
 
