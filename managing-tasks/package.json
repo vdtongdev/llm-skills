@@ -1,0 +1,17 @@
+{
+  "name": "managing-tasks",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "task": "bin/task"
+  },
+  "dependencies": {
+    "yaml": "2.8.3",
+    "ulid": "3.0.2",
+    "proper-lockfile": "4.1.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

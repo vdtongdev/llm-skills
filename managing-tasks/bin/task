@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+import { main } from "../lib/cli.mjs";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const skillRoot = resolve(here, "..");
+main(process.argv.slice(2), { skillRoot, cwd: process.cwd() }).then(
+  (code) => process.exit(code ?? 0),
+  (err) => {
+    console.error(err?.message || String(err));
+    process.exit(err?.exitCode ?? 1);
+  },
+);
