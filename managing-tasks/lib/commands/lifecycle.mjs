@@ -7,6 +7,11 @@ import { atomicWrite, withLock, MAINTENANCE_TIMEOUT_MS } from "../storage.mjs";
 import { scanTasks, writeCache, rebuildCache, taskFilePath, TASKS_DIR, ARCHIVE_DIR } from "../cache.mjs";
 import { ValidationError, TERMINAL, SCHEMA_VERSION } from "../schema.mjs";
 
+/**
+ * Move done tasks to .tasks/archive/.
+ * Use --id for a single task or --older-than <days> for bulk by mtime.
+ * Refuses if the target is still referenced by an active dependent.
+ */
 export async function cmdArchive(cwd, args) {
   return withLock(cwd, { timeoutMs: MAINTENANCE_TIMEOUT_MS }, async () => {
     const all = await scanTasks(cwd, { includeArchived: true });
@@ -14,10 +19,11 @@ export async function cmdArchive(cwd, args) {
     if (args.id) {
       const t = all.find((x) => x.id === String(args.id));
       if (!t) throw new ValidationError(`task ${args.id} not found`, 2);
+      if (t.status !== "done" && !args.force) throw new ValidationError(`task ${args.id} is not done (${t.status}); use --force to archive anyway`, 4);
       targets = [t];
     } else if (args["older-than"]) {
       const days = parseInt(args["older-than"], 10);
-      if (isNaN(days)) throw new ValidationError("--older-than requires integer days");
+      if (isNaN(days) || days < 0) throw new ValidationError("--older-than requires a non-negative integer");
       const cutoff = Date.now() - days * 86400_000;
       targets = all.filter((t) => t.status === "done" && !t.archived && t.mtime < cutoff);
     } else {
@@ -44,6 +50,7 @@ export async function cmdArchive(cwd, args) {
   });
 }
 
+/** Rebuild .tasks/.cache/index.yaml from scratch. */
 export async function cmdReindex(cwd) {
   return withLock(cwd, { timeoutMs: MAINTENANCE_TIMEOUT_MS }, async () => {
     const tasks = await rebuildCache(cwd);
@@ -51,6 +58,7 @@ export async function cmdReindex(cwd) {
   });
 }
 
+/** Normalize file prefixes to multiples of 10 (010, 020, …) to restore ordering space after moves. */
 export async function cmdRenumber(cwd) {
   return withLock(cwd, { timeoutMs: MAINTENANCE_TIMEOUT_MS }, async () => {
     const all = await scanTasks(cwd, { includeArchived: false });
@@ -74,6 +82,7 @@ export async function cmdRenumber(cwd) {
   });
 }
 
+/** Migrate task files to the current schema version. v1 is the only version; no-op for now. */
 export async function cmdMigrate(cwd, args) {
   return withLock(cwd, { timeoutMs: MAINTENANCE_TIMEOUT_MS }, async () => {
     const all = await scanTasks(cwd, { includeArchived: true });

@@ -50,6 +50,12 @@ const ROUTER = {
   migrate: cmdMigrate,
 };
 
+/**
+ * CLI entry point — dispatch argv to command handlers and print the result.
+ * @param {string[]} argv - args after the binary (i.e. process.argv.slice(2))
+ * @param {{ cwd: string }} opts
+ * @returns {Promise<number>} exit code
+ */
 export async function main(argv, { cwd }) {
   const [cmd, ...rest] = argv;
   if (!cmd || cmd === "-h" || cmd === "--help") return printHelp();
@@ -64,13 +70,18 @@ export async function main(argv, { cwd }) {
     return printHelp(3);
   }
   const args = parseArgs(rest);
-  const res = await handler(cwd, args);
-  if (res?.raw) {
-    console.log(res.raw);
-  } else if (res) {
-    console.log(YAML.stringify(res));
+  try {
+    const res = await handler(cwd, args);
+    if (res != null && "raw" in res) {
+      console.log(res.raw);
+    } else if (res) {
+      console.log(YAML.stringify(res));
+    }
+    return 0;
+  } catch (err) {
+    console.error(err?.message || String(err));
+    return err?.exitCode ?? 1;
   }
-  return 0;
 }
 
 async function cmdInit(cwd) {
@@ -93,6 +104,10 @@ async function cmdInit(cwd) {
   });
 }
 
+/**
+ * Parse argv into { _: string[], ...flags }.
+ * Repeated flags accumulate into arrays; boolean flags are set to true.
+ */
 function parseArgs(argv) {
   const out = { _: [] };
   for (let i = 0; i < argv.length; i++) {

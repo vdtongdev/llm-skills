@@ -2,6 +2,10 @@
 
 import YAML from "yaml";
 
+/**
+ * Render one task as a 4-line default entry or a single compact line.
+ * Invalid tasks always render as "[?] INVALID <file>: <error>".
+ */
 export function renderListLine(t, { compact = false } = {}) {
   if (t.status === "invalid") {
     return `[?] INVALID  ${t.file}: ${t.error}`;
@@ -19,10 +23,12 @@ export function renderListLine(t, { compact = false } = {}) {
   return lines.join("\n");
 }
 
+/** Render an array of tasks; returns a newline-joined string. */
 export function renderList(tasks, opts = {}) {
   return tasks.map((t) => renderListLine(t, opts)).join("\n");
 }
 
+/** Render full task detail as YAML with a contract_version: 1 envelope. */
 export function renderShow(t) {
   const obj = {
     contract_version: 1,
@@ -39,6 +45,13 @@ export function renderShow(t) {
     sources: t.sources,
     archived: !!t.archived,
   };
+  return YAML.stringify(obj);
+}
+
+/** Render a subtask as YAML with contract_version: 1 and parent context. */
+export function renderShowSubtask(t) {
+  const obj = { contract_version: 1, parent_id: t._parent.id, parent_title: t._parent.title, id: t.id, title: t.title, status: t.status };
+  if (t.kind !== undefined) obj.kind = t.kind;
   return YAML.stringify(obj);
 }
 

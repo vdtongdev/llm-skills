@@ -11,6 +11,10 @@ export const TASKS_DIR = ".tasks";
 export const ARCHIVE_DIR = ".tasks/archive";
 export const CACHE_FILE = ".tasks/.cache/index.yaml";
 
+/**
+ * Read all .yaml task files from .tasks/ (and optionally .tasks/archive/).
+ * Returns an array sorted by filename prefix; invalid files are included with status "invalid".
+ */
 export async function scanTasks(cwd, { includeArchived = false } = {}) {
   const dirs = [join(cwd, TASKS_DIR)];
   if (includeArchived && existsSync(join(cwd, ARCHIVE_DIR))) dirs.push(join(cwd, ARCHIVE_DIR));
@@ -51,6 +55,7 @@ export async function scanTasks(cwd, { includeArchived = false } = {}) {
           _raw: parsed,
         });
       } catch (err) {
+        if (err.exitCode === 6) throw err; // schema-too-new: propagate, don't degrade to "invalid"
         out.push({
           id: "?",
           title: name,
@@ -67,6 +72,7 @@ export async function scanTasks(cwd, { includeArchived = false } = {}) {
   return out;
 }
 
+/** Write a slim projection of tasks to .tasks/.cache/index.yaml. */
 export async function writeCache(cwd, tasks) {
   const cache = {
     schema: SCHEMA_VERSION,
@@ -89,16 +95,22 @@ export async function writeCache(cwd, tasks) {
   return cache;
 }
 
+/** Full cache rebuild: scan all tasks (including archive) then write cache. */
 export async function rebuildCache(cwd) {
   const tasks = await scanTasks(cwd, { includeArchived: true });
   await writeCache(cwd, tasks);
   return tasks;
 }
 
+/** Find a task by exact numeric string id; returns undefined if not found. */
 export function findTaskById(tasks, id) {
   return tasks.find((t) => t.id === String(id));
 }
 
+/**
+ * Find by task id or subtask id (e.g. "3.1").
+ * For subtask ids returns { ...subtask, _parent, _isSubtask: true }.
+ */
 export function findTaskByAnyId(tasks, id) {
   const s = String(id);
   if (s.includes(".")) {
@@ -111,6 +123,7 @@ export function findTaskByAnyId(tasks, id) {
   return tasks.find((t) => t.id === s);
 }
 
+/** Resolve the filesystem path for a task, routing to archive dir when task.archived is true. */
 export function taskFilePath(cwd, task) {
   const dir = task.archived ? ARCHIVE_DIR : TASKS_DIR;
   return join(cwd, dir, task.file);

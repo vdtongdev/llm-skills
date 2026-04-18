@@ -10,6 +10,10 @@ import { validateTaskFile, validateBatch, ValidationError, SCHEMA_VERSION, TERMI
 
 const PREFIX_GAP = 10;
 
+/**
+ * Create a single task; allocates the next numeric id and prefix slot.
+ * @returns {{ contract_version: 1, id: string, uid: string, file: string }}
+ */
 export async function cmdNew(cwd, args) {
   // task new "<title>" [--goal=..] [--file path:kind] [--depends-on=id] [--source 'kind=..,ref=..']
   const title = args._[0];
@@ -48,6 +52,12 @@ export async function cmdNew(cwd, args) {
   });
 }
 
+/**
+ * Atomic batch create from a validated batch YAML file.
+ * Resolves intra-batch label references to real ids before writing.
+ * Rolls back all written files on any failure.
+ * @returns {{ contract_version: 1, label_map: object, created: number }}
+ */
 export async function cmdImport(cwd, path) {
   if (!path) throw new ValidationError("task import <batch.yaml>");
   const abs = resolve(cwd, path);
@@ -55,6 +65,7 @@ export async function cmdImport(cwd, path) {
   try {
     batch = YAML.parse(await readFile(abs, "utf8"));
   } catch (err) {
+    if (err.code === "ENOENT") throw new ValidationError(`batch file not found: ${abs}`, 2);
     throw new ValidationError(`batch parse: ${err.message}`);
   }
   validateBatch(batch);
@@ -126,15 +137,14 @@ export async function cmdImport(cwd, path) {
         await atomicWrite(w.path, w.content);
         written.push(w.path);
       }
+      const refreshed = await scanTasks(cwd, { includeArchived: true });
+      await writeCache(cwd, refreshed);
     } catch (err) {
-      // best-effort rollback
+      // best-effort rollback: remove any task files already written
       const { rm } = await import("node:fs/promises");
       for (const p of written) await rm(p, { force: true });
       throw err;
     }
-
-    const refreshed = await scanTasks(cwd, { includeArchived: true });
-    await writeCache(cwd, refreshed);
     return { contract_version: 1, label_map: labelMap, created: allocated.length };
   });
 }
@@ -166,7 +176,10 @@ function parseSourceFlags(val) {
   return vals.map((v) => parseSourceString(v));
 }
 
-// 'kind=prd,ref=a.md#s,meta.key=value' — quoted ref with comma supported.
+/**
+ * Parse a source specifier: 'kind=prd,ref=a.md#s,meta.key=value'.
+ * Supports quoted values containing commas (e.g. ref="a,b.md").
+ */
 export function parseSourceString(s) {
   const out = { meta: {} };
   const tokens = tokenizeCSV(s);

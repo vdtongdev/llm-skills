@@ -9,6 +9,10 @@ export const MAINTENANCE_TIMEOUT_MS = 60_000;
 
 const LOCK_RELATIVE = ".tasks/.cache/lock";
 
+/**
+ * Write content to targetPath via tmp file + rename — crash-safe.
+ * Fsyncs both the file and its parent directory for durability.
+ */
 export async function atomicWrite(targetPath, content) {
   const dir = dirname(targetPath);
   await mkdir(dir, { recursive: true });
@@ -45,13 +49,22 @@ async function ensureLockFile(cwd) {
 
 // Option A: shared/exclusive collapse to exclusive under the hood.
 // Queries serialize against mutations; solo-dev workflow makes this cost trivial.
+/**
+ * Acquire an exclusive lock on .tasks/.cache/lock, run fn, then release.
+ * @param {string} cwd
+ * @param {{ timeoutMs?: number }} [opts] - controls both stale threshold and retry budget
+ * @param {Function} fn - async thunk to run under lock
+ * @throws {{ exitCode: 5 }} on lock contention timeout
+ */
 export async function withLock(cwd, { timeoutMs = SHORT_TIMEOUT_MS } = {}, fn) {
   const lockPath = await ensureLockFile(cwd);
+  // Retry budget: retries × maxTimeout(500ms) ≈ timeoutMs.
+  const retries = Math.max(10, Math.ceil(timeoutMs / 500));
   let release;
   try {
     release = await lockfile.lock(lockPath, {
       retries: {
-        retries: 10,
+        retries,
         minTimeout: 50,
         maxTimeout: 500,
         factor: 1.5,

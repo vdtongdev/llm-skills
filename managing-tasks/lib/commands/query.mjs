@@ -2,9 +2,10 @@
 
 import { withLock } from "../storage.mjs";
 import { scanTasks, findTaskByAnyId } from "../cache.mjs";
-import { renderList, renderShow } from "../formatters.mjs";
+import { renderList, renderShow, renderShowSubtask } from "../formatters.mjs";
 import { ValidationError, TERMINAL } from "../schema.mjs";
 
+/** List tasks with optional filters: --status, --ready, --blocked, --touching, --compact, --all, --archived. */
 export async function cmdList(cwd, args) {
   return withLock(cwd, {}, async () => {
     const all = await scanTasks(cwd, { includeArchived: !!args.archived || !!args.all });
@@ -19,8 +20,8 @@ export async function cmdList(cwd, args) {
       tasks = tasks.filter((t) => t.files?.some((f) => f.path.includes(String(args.touching))));
     }
     if (args.ready) {
-      const doneOrCancelled = new Set(all.filter((t) => TERMINAL.has(t.status)).map((t) => t.id));
-      tasks = tasks.filter((t) => t.status === "pending" && (t.depends_on || []).every((d) => doneOrCancelled.has(d)));
+      const doneOnly = new Set(all.filter((t) => t.status === "done").map((t) => t.id));
+      tasks = tasks.filter((t) => t.status === "pending" && (t.depends_on || []).every((d) => doneOnly.has(d)));
     }
     if (args.blocked) {
       tasks = tasks.filter((t) => t.status === "blocked" || (t.depends_on || []).some((d) => {
@@ -32,6 +33,7 @@ export async function cmdList(cwd, args) {
   });
 }
 
+/** Show full YAML detail for one task; supports subtask ids like "3.1". */
 export async function cmdShow(cwd, args) {
   const id = args._[0];
   if (!id) throw new ValidationError("task show <id>");
@@ -39,10 +41,11 @@ export async function cmdShow(cwd, args) {
     const all = await scanTasks(cwd, { includeArchived: true });
     const t = findTaskByAnyId(all, id);
     if (!t) throw new ValidationError(`task ${id} not found`, 2);
-    return { raw: renderShow(t) };
+    return { raw: t._isSubtask ? renderShowSubtask(t) : renderShow(t) };
   });
 }
 
+/** Return the first actionable item: an open subtask of the in-progress task, else the first ready pending task. */
 export async function cmdNext(cwd) {
   return withLock(cwd, {}, async () => {
     const all = await scanTasks(cwd, { includeArchived: false });
@@ -58,6 +61,7 @@ export async function cmdNext(cwd) {
   });
 }
 
+/** Show upstream dependencies and downstream dependents for a task. */
 export async function cmdDeps(cwd, args) {
   const id = args._[0];
   if (!id) throw new ValidationError("task deps <id>");
@@ -82,6 +86,7 @@ export async function cmdDeps(cwd, args) {
   });
 }
 
+/** Full-text regex search across title, goal, notes, file paths, and source refs. */
 export async function cmdGrep(cwd, args) {
   const pattern = args._[0];
   if (!pattern) throw new ValidationError("task grep <pattern>");
@@ -101,6 +106,7 @@ export async function cmdGrep(cwd, args) {
   });
 }
 
+/** Show goal and sources for a task — the "why it exists" view. */
 export async function cmdWhy(cwd, args) {
   const id = args._[0];
   if (!id) throw new ValidationError("task why <id>");

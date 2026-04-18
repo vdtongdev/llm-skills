@@ -9,32 +9,41 @@ import { scanTasks, writeCache, taskFilePath, TASKS_DIR } from "../cache.mjs";
 import { validateTaskFile, ValidationError, STATUSES, TERMINAL } from "../schema.mjs";
 import { parseSourceString } from "./create.mjs";
 
+/** Load all tasks including archive. */
 async function loadAll(cwd) {
   return scanTasks(cwd, { includeArchived: true });
 }
 
+/** Validate and write a task object to disk; strips internal _-prefixed fields before serializing. */
 async function save(cwd, task, filePath) {
   validateTaskFile(task, { filename: filePath });
   const clean = Object.fromEntries(Object.entries(task).filter(([k]) => !k.startsWith("_")));
   await atomicWrite(filePath, YAML.stringify(clean));
 }
 
+/** Rebuild the cache and return the updated task list. */
 async function refreshCache(cwd) {
   const all = await scanTasks(cwd, { includeArchived: true });
   await writeCache(cwd, all);
   return all;
 }
 
+/** Find task by id; throws ValidationError exit 2 if not found. */
 function assertFound(all, id) {
   const t = all.find((x) => x.id === String(id));
   if (!t) throw new ValidationError(`task ${id} not found`, 2);
   return t;
 }
 
+/** Extract the raw stored object from a scanned task (strips cache projection fields added by scanTasks). */
 function raw(t) {
   return { ...t._raw };
 }
 
+/**
+ * Transition a task to a new status.
+ * Blocks "done" if open subtasks or non-terminal deps exist (override with --force).
+ */
 export async function cmdSetStatus(cwd, args) {
   const [id, status] = args._;
   if (!id || !status) throw new ValidationError("task set-status <id> <status>");
@@ -62,6 +71,7 @@ export async function cmdSetStatus(cwd, args) {
   });
 }
 
+/** Update title or goal of a task. */
 export async function cmdEdit(cwd, args) {
   const id = args._[0];
   if (!id) throw new ValidationError("task edit <id>");
@@ -78,6 +88,7 @@ export async function cmdEdit(cwd, args) {
   });
 }
 
+/** Append a file entry (path:kind) to the task's files list. */
 export async function cmdAddFile(cwd, args) {
   const [id, spec] = args._;
   if (!id || !spec) throw new ValidationError("task add-file <id> <path:kind>");
@@ -88,6 +99,7 @@ export async function cmdAddFile(cwd, args) {
   });
 }
 
+/** Remove a file entry by path. */
 export async function cmdRmFile(cwd, args) {
   const [id, path] = args._;
   if (!id || !path) throw new ValidationError("task rm-file <id> <path>");
@@ -96,6 +108,7 @@ export async function cmdRmFile(cwd, args) {
   });
 }
 
+/** Append a change description string to an existing file entry on the task. */
 export async function cmdAddChange(cwd, args) {
   const [id, path, ...rest] = args._;
   const change = rest.join(" ");
@@ -108,6 +121,10 @@ export async function cmdAddChange(cwd, args) {
   });
 }
 
+/**
+ * Add a dependency edge; validates no cycle, dep is non-cancelled, and task isn't already done.
+ * Also records the dep's uid in depends_on_uids for stable cross-rename references.
+ */
 export async function cmdAddDep(cwd, args) {
   const [id, depId] = args._;
   if (!id || !depId) throw new ValidationError("task add-dep <id> <dep>");
@@ -137,19 +154,21 @@ export async function cmdAddDep(cwd, args) {
   });
 }
 
+/** Remove a dependency edge; removes all matching uid entries by position to keep arrays aligned. */
 export async function cmdRmDep(cwd, args) {
   const [id, depId] = args._;
   if (!id || !depId) throw new ValidationError("task rm-dep <id> <dep>");
   return mutate(cwd, id, (data) => {
-    const idx = (data.depends_on || []).indexOf(depId);
-    data.depends_on = (data.depends_on || []).filter((d) => d !== depId);
-    if (idx >= 0 && data.depends_on_uids) {
-      data.depends_on_uids = [...data.depends_on_uids];
-      data.depends_on_uids.splice(idx, 1);
+    const depsArr = data.depends_on || [];
+    const removedIndices = new Set(depsArr.reduce((acc, d, i) => { if (d === depId) acc.push(i); return acc; }, []));
+    data.depends_on = depsArr.filter((d) => d !== depId);
+    if (removedIndices.size && data.depends_on_uids) {
+      data.depends_on_uids = data.depends_on_uids.filter((_, i) => !removedIndices.has(i));
     }
   });
 }
 
+/** Append a subtask with id "N.M", title, and optional kind. */
 export async function cmdAddSubtask(cwd, args) {
   const [id, subId, ...titleParts] = args._;
   const title = titleParts.join(" ");
@@ -164,6 +183,7 @@ export async function cmdAddSubtask(cwd, args) {
   });
 }
 
+/** Update status or title of an existing subtask. */
 export async function cmdEditSubtask(cwd, args) {
   const [id, subId] = args._;
   if (!id || !subId) throw new ValidationError("task edit-subtask <id> <sub-id> [--status ...] [--title ...]");
@@ -179,6 +199,7 @@ export async function cmdEditSubtask(cwd, args) {
   });
 }
 
+/** Append a free-text note to the task. */
 export async function cmdAddNote(cwd, args) {
   const [id, ...rest] = args._;
   const note = rest.join(" ");
@@ -188,6 +209,7 @@ export async function cmdAddNote(cwd, args) {
   });
 }
 
+/** Append a test description string to the task. */
 export async function cmdAddTest(cwd, args) {
   const [id, ...rest] = args._;
   const test = rest.join(" ");
@@ -197,6 +219,7 @@ export async function cmdAddTest(cwd, args) {
   });
 }
 
+/** Append a source entry (parsed from --source 'kind=..,ref=..'). */
 export async function cmdAddSource(cwd, args) {
   const [id] = args._;
   if (!id || !args.source) throw new ValidationError("task add-source <id> --source 'kind=..,ref=..'");
@@ -206,6 +229,7 @@ export async function cmdAddSource(cwd, args) {
   });
 }
 
+/** Remove a source entry by ref. */
 export async function cmdRmSource(cwd, args) {
   const [id, ref] = args._;
   if (!id || !ref) throw new ValidationError("task rm-source <id> <ref>");
@@ -214,6 +238,10 @@ export async function cmdRmSource(cwd, args) {
   });
 }
 
+/**
+ * Reorder a task by inserting it directly after another task (--after <id>).
+ * Fails if there's no prefix gap between the anchor and its next task; run 'task renumber' first.
+ */
 export async function cmdMove(cwd, args) {
   const id = args._[0];
   const after = args.after;
@@ -244,6 +272,7 @@ export async function cmdMove(cwd, args) {
   });
 }
 
+/** Permanently delete a task file. Blocked by dependents unless --force. */
 export async function cmdRm(cwd, args) {
   const id = args._[0];
   if (!id) throw new ValidationError("task rm <id> [--force]");
@@ -260,6 +289,7 @@ export async function cmdRm(cwd, args) {
   });
 }
 
+/** Set status to "cancelled". Blocked by active dependents unless --force. */
 export async function cmdCancel(cwd, args) {
   const id = args._[0];
   if (!id) throw new ValidationError("task cancel <id> [--force]");
@@ -278,12 +308,23 @@ export async function cmdCancel(cwd, args) {
   });
 }
 
+/**
+ * Set status to "pending".
+ * Blocks if any dependency is cancelled (override with --force).
+ * If the task is archived, moves the file back from .tasks/archive/ to .tasks/.
+ */
 export async function cmdReopen(cwd, args) {
   const id = args._[0];
   if (!id) throw new ValidationError("task reopen <id>");
   return withLock(cwd, {}, async () => {
     const all = await loadAll(cwd);
     const t = assertFound(all, id);
+    if (!args.force) {
+      for (const d of t.depends_on || []) {
+        const dep = all.find((x) => x.id === d);
+        if (dep?.status === "cancelled") throw new ValidationError(`dep ${d} is cancelled; rm-dep it first or use --force`, 4);
+      }
+    }
     const data = raw(t);
     data.status = "pending";
     if (t.archived) {
@@ -301,6 +342,7 @@ export async function cmdReopen(cwd, args) {
   });
 }
 
+/** Acquire lock, load task, run transform(data), save, and refresh cache. */
 async function mutate(cwd, id, transform) {
   return withLock(cwd, {}, async () => {
     const all = await loadAll(cwd);
@@ -314,6 +356,7 @@ async function mutate(cwd, id, transform) {
   });
 }
 
+/** Iterative DFS cycle check: returns true if start is reachable from itself via graph edges. */
 function hasCycle(graph, start) {
   const stack = [start];
   const visited = new Set();
