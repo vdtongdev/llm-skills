@@ -83,6 +83,7 @@ Two passes, different failure modes.
 Catches document-QA issues: TODOs, vague paths, missing signatures, untestable cases. See `references/plan-reviewer-prompt.md`.
 
 **Loop:**
+
 1. Dispatch reviewer with path to PRD
 2. If issues found: fix them, re-dispatch
 3. If approved: proceed to 5b
@@ -95,10 +96,12 @@ Same agent that wrote the plan fixes it (preserves context).
 Catches idea-level flaws: unvalidated assumptions, missing failure modes, scope bugs. See `references/adversarial-reviewer-prompt.md`.
 
 **Preconditions:**
+
 - PRD passed 5a
 - PRD contains Context Primer, Breadth Checklist, Key Assumptions, Known Risks sections
 
 **Loop:**
+
 1. Claude invokes Codex via companion `task` with full PRD text
 2. Codex emits findings (bundled, numbered) plus any questions
 3. Stop. Present findings to user.
@@ -152,7 +155,7 @@ On failure, the CLI creates zero tasks (atomic rollback). Read the stderr messag
 Example TDD subtask split inside the batch:
 
 ```yaml
-- label: rule-ep
+- label: rule-post-endpoint
   title: Add POST /rules endpoint
   goal: Expose rule creation to clients.
   files:

@@ -8,10 +8,13 @@ Use this structure when writing a PRD. Sections are examples — adapt to your p
 # PRD: <Feature Name>
 
 ## Overview
+
 What and why. Issue/ticket reference if applicable.
 
 ## Context Primer
-Scoped to this PRD. Include only what's relevant to *this* feature.
+
+Scoped to this PRD. Include only what's relevant to _this_ feature.
+
 - What the app does (1-2 sentences)
 - Domain concepts the reviewer needs (e.g., "journal entries are double-entry accounting records; every entry must balance")
 - Existing patterns this feature will extend or deviate from
@@ -20,16 +23,19 @@ Scoped to this PRD. Include only what's relevant to *this* feature.
 Required. PRD must be self-contained — external reviewers (adversarial reviewer, future executors) read only this doc.
 
 ## Breadth Checklist
+
 Subsystems this feature touches. One line each. Forces the author to consider adjacencies.
 
 Core rows (always include, write "none" if empty):
+
 - **Reads from:** [subsystem, model, or service]
 - **Writes to:** [subsystem, model, or service]
 - **User flows touched:** [flow name, even if only lightly]
 - **Shared utilities/models depended on:** [path or name]
 
 Conditional rows (include when relevant, omit when not):
-- **Authz/permissions:** who can invoke this, what changes
+
+- **Auth/permissions:** who can invoke this, what changes
 - **Caching:** what gets cached, invalidation triggers
 - **Background jobs:** queues, workers, schedules touched
 - **Observability:** logs, metrics, traces this feature emits or depends on
@@ -42,52 +48,65 @@ Conditional rows (include when relevant, omit when not):
 The author decides relevance. Adversarial reviewer will flag suspicious omissions.
 
 ## Key Assumptions
+
 Things this plan depends on being true. Explicit list, not implied.
+
 - [Assumption] — why we believe it
 
 Adversarial reviewer targets this list. The more honest, the better the review.
 
 ## Known Risks / Accepted Tradeoffs
+
 Risks the author already sees and accepts.
+
 - [Risk] — why accepting is fine
 
 Preempts weak adversarial findings. Forces the author to confront tradeoffs instead of hiding them.
 
 ## Current State
+
 What exists today. Reference exact files and functions.
 
 ## Requirements
 
 ### <Domain Section 1> (e.g., Backend, API, Data Pipeline)
+
 - Endpoint specs / interface specs (URL, method, request/response schemas with examples)
 - Query logic / processing logic
 - Where to put code (new files, modifications to existing)
 
 ### <Domain Section 2> (e.g., Frontend, CLI, Worker)
+
 - Component structure / command structure
 - Data flow (which API methods, which state)
 - User-facing behavior
 
 ## Out of Scope
+
 Explicit boundaries. What this feature does NOT do.
 
 ## Implementation Details
 
 ### Files to Create
+
 - `path/to/file.py` — purpose
 
 ### Files to Modify
+
 - `path/to/file.py: function_name()` — what to change and brief why
 
 ### Files to Delete
+
 - `path/to/old_file.py` — why it's no longer needed
 
 ### Test Plan
+
 - Test cases (input -> expected status + response/result)
 - E2E / integration test cases (action -> expected outcome)
 - Fixtures to use or create
 
 ### Patterns to Follow
+
 - "See `path/to/example.py` for similar pattern"
 ```
 
@@ -99,27 +118,65 @@ The right level of detail depends on the type of change:
 
 ```markdown
 `backend/routers/dashboard.py`: new async endpoint `get_mtd_summary(db) -> MtdSummaryResponse`
-  - joins journal_entry_fact + journal_line_fact + account_dim
-  - filters: entry_type IN (INCOME, EXPENSE), current month, amount > 0
-  - groups by: entry_type, currency
+
+- joins journal_entry_fact + journal_line_fact + account_dim
+- filters: entry_type IN (INCOME, EXPENSE), current month, amount > 0
+- groups by: entry_type, currency
 ```
 
 ### Modifications — specify what + brief why
 
 ```markdown
 `backend/main.py`: register dashboard router
-  Why: new router file, needs to be included in the app
+Why: new router file, needs to be included in the app
 
 `frontend/src/components/dashboard.ts`: add `loadMtdSummary()`, computed getters
-  `mtdRevenueByCurrency`, `mtdExpensesByCurrency`, `mtdNetByCurrency`
-  Why: follows existing `assetsByCurrency` pattern for multi-currency display
+`mtdRevenueByCurrency`, `mtdExpensesByCurrency`, `mtdNetByCurrency`
+Why: follows existing `assetsByCurrency` pattern for multi-currency display
 ```
 
 ### Removals — specify what + brief why
 
 ```markdown
 `frontend/src/components/old_widget.ts`: delete file
-  Why: replaced by new_widget.ts, no other imports
+Why: replaced by new_widget.ts, no other imports
 ```
 
-Don't add "why" everywhere — only where the reason isn't obvious from context.
+DO NOT:
+
+- add "why" everywhere — only where the reason isn't obvious from context.
+- write actual code in the PRD. The PRD is for planning, not implementation.
+
+GOOD:
+
+```markdown
+add function `create_user(request: UserCreateRequest, _admin: UserDim, db: AsyncSession,) -> UserResponse:` to create users via API.
+```
+
+BAD (too much detail):
+
+```markdown
+add function `async def create_user(
+request: UserCreateRequest,
+admin: Annotated[UserDim, Depends(get_current_admin)],
+db: Annotated[AsyncSession, Depends(get_superuser_db)],
+) -> UserResponse:
+... # Check unique email
+existing_email = await db.execute(
+select(UserDim).where(UserDim.email == request.email),
+)
+if existing_email.scalar_one_or_none() is not None:
+raise HTTPException(
+status_code=status.HTTP_409_CONFLICT,
+detail="Email already exists",
+)
+
+    user = UserDim(
+        username=request.username,
+        email=request.email,
+        password_hash=hash_password(request.password),
+        is_admin=False,
+        is_active=True,
+    )
+    ...`
+```
