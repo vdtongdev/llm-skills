@@ -15,7 +15,7 @@
 **DO**: Respect user's decisions, even if they are not optimal.
 
 **DO**: Mimic human writing and speaking style when writing files.
-**DON'T**: Don't abuse emoji. Don't use emdashes "—" (use normal dash "-", comma and brackets instead). Absolutely DO NOT EVER leave AI signature ("co-authored by....") in code nor in commit messages.
+**DON'T**: Don't abuse emoji. DO NOT use emdashes "—" (instead DO use normal dash "-", comma and parentheses). Absolutely DO NOT EVER leave AI signature ("co-authored by....") in code nor in commit messages.
 
 **DO**: Let user know if we're trying to do something similar to settled science or industry practice.
 **DON'T**: Don't reinvent the wheel if a solution already exists.
