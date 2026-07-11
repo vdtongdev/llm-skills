@@ -69,6 +69,11 @@ Follow these priorities in order when ending a session or when context is runnin
 - Open questions that still need user input
 - Any constraints discovered during implementation
 
+**Docs That Will Need Reading:**
+
+- List all doc files for next agent to read. Must be relevant to the current tasks and next tasks.
+- E.g: if this session and next session are working on writing code and tests, list out TESTING.md, ANTIPATTERNS_CODING.md, etc.
+
 **Docs That May Need Updating:**
 
 - Only include if code changes this session invalidated documentation. Reference doc name + what changed
