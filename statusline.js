@@ -189,11 +189,6 @@ function render(data) {
   const rightLen = visibleLength(right);
   const gap = tw - leftLen - rightLen;
 
-  try {
-    fs.appendFileSync("/home/user/.claude/skills/statusline-debug.log",
-      `${new Date().toISOString()} tty=${process.stdout.isTTY} cols=${process.stdout.columns} COLUMNS=${process.env.COLUMNS} terminalWidth=${tw} leftLen=${leftLen} rightLen=${rightLen} gap=${gap}\n`);
-  } catch { /* ignore */ }
-
   if (gap < MIN_GAP) return left + "\n" + right;
 
   return left + " ".repeat(gap) + right;
