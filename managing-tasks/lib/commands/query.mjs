@@ -57,7 +57,8 @@ export async function cmdNext(cwd) {
     const doneOrCancelled = new Set(all.filter((t) => TERMINAL.has(t.status)).map((t) => t.id));
     const ready = all.find((t) => t.status === "pending" && (t.depends_on || []).every((d) => doneOrCancelled.has(d)));
     if (!ready) return { raw: "no ready task" };
-    return { raw: `[${ready.id}] ${ready.title}` };
+    const kindTag = ready.kind ? ` kind:${ready.kind}` : "";
+    return { raw: `[${ready.id}] ${ready.title}${kindTag}` };
   });
 }
 

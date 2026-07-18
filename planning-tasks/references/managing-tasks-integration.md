@@ -13,6 +13,7 @@ tasks:
     title: Add get_mtd_summary endpoint
     goal: |
       Expose MTD revenue/expense grouped by currency.
+    kind: coding               # optional; skill-domain for proactive context loading
     status: pending
     depends_on: []             # IDs that already exist in the tracker
     depends_on_labels: []      # labels within this batch
@@ -66,6 +67,7 @@ Enforce every item before submitting. If any fails, fix the PRD + batch, don't p
 | `files[]` | ≥1 entry. Each has `path`, `kind`, and ≥1 `changes` bullet. |
 | `tests[]` or `notes[]` | At least one populated. Tests named with expected outcome (input → output). |
 | `sources[]` | ≥1 entry. Default `kind: prd`, `ref: <prd-path>#<section>`. |
+| `kind` (task) | Optional but encouraged. Skill-domain (`coding`/`testing`/`docs`/...) from the project's `CLAUDE.md` task-kinds table. Dominant domain for mixed tasks. Distinct from `subtasks[].kind` (RED/GREEN phase). |
 | Granularity | Split if >3 files AND >5 total change bullets. Split per subsystem. |
 | Deps | Every `depends_on` / `depends_on_labels` reason-backed. No implicit chains. |
 | Subtasks (TDD) | Only where project mandates TDD and layer supports it (unit/API/integration/component, not E2E). |

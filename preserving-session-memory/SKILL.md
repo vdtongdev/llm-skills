@@ -61,6 +61,14 @@ Both modes read and/or write this file. Use this exact structure:
 
 <one-line: planning / implementing / testing / debugging / blocked>
 
+## Docs That Will Need Reading
+
+Doc files (and skills to invoke) the next agent needs before touching code —
+not what happened, but what to load first.
+
+- `path/to/doc.md` — why it's relevant to the current/next task
+- `/skill-name` — why this task needs it invoked
+
 ## What's Done
 
 Completed files — one line each, filename + what was done. These are graduated
@@ -97,6 +105,15 @@ Legend: [ ] not started, [-] in progress, [x] → move to "What's Done"
 
 <"All committed" / "Stashed as: session: <desc>" / description of dirty state>
 
+## Discussion Summary
+
+Narrative of any decision-making, structuring, or long-term-planning discussion
+with the user this session - the "why we talked it through" that isn't already
+a discrete entry in Decisions & Open Questions. Omit if the session was purely
+implementation/ops.
+
+- <topic discussed, the shape of the back-and-forth, where it landed>
+
 ## Decisions & Open Questions
 
 - <architectural/design decisions made + reasoning>
@@ -112,6 +129,12 @@ Legend: [ ] not started, [-] in progress, [x] → move to "What's Done"
 ```
 
 ## Section Rules
+
+### Docs That Will Need Reading
+
+- List doc files AND skills relevant to the current and immediate next task only — not everything the project has
+- If a task tracker task has a `kind` (see `/managing-tasks`), derive this section from the project's CLAUDE.md task-kinds table rather than guessing from memory
+- Distinct from "Docs That May Need Updating" below — this section is about what to load, that one is about what's gone stale
 
 ### What's Done
 
@@ -136,6 +159,12 @@ This is the most valuable section for the next session. Without it, the next age
 - What was attempted
 - What went wrong
 - **WHY** it failed (root cause, not just symptoms)
+
+### Discussion Summary
+
+- Optional - include only if the session had decision-making, structuring, or long-term planning discussion; skip for pure implementation/ops sessions
+- Captures the narrative of *how* a conclusion was reached, not just the conclusion (which belongs in Decisions & Open Questions)
+- Distinct from Failed Approaches: that's what was tried and abandoned in code; this is what was talked through with the user
 
 ### Decisions & Open Questions
 

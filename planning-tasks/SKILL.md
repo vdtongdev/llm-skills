@@ -128,6 +128,7 @@ Otherwise, build a batch-import YAML from the PRD's Implementation Details secti
 - `files` — ≥1 entry, each with `path`, `kind` (`create`|`modify`|`delete`), and ≥1 `changes` bullet
 - At least one of `tests` OR `notes` populated
 - `sources` — ≥1 entry pointing back to the PRD (e.g., `kind: prd, ref: context/prd-X.md#section-name`)
+- `kind` — optional but encouraged. Set the task's skill-domain (e.g. `coding`, `testing`, `docs`, `infra`) so the executing agent auto-loads the right skill/antipatterns per the project's `CLAUDE.md` task-kinds table. Pick the value from that table's vocabulary; for a task that both writes code and its tests, use the dominant domain (usually `coding` — the RED/GREEN split is already captured by `subtasks[].kind`). Omit `kind` if the project defines no task-kinds table. Do not confuse this task-level `kind` (domain) with `subtasks[].kind` (RED/GREEN phase).
 
 **Granularity rules:**
 

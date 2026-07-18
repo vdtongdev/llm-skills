@@ -12,6 +12,7 @@ Check for a `/testing-code` section in the project's CLAUDE.md `SKILL CONFIGURAT
 - **Testing doc** — project commands, file paths, fixtures, domain invariants
 - **Backend inventory** — tracks existing backend tests
 - **Frontend inventory** — tracks existing frontend/E2E tests
+- **Antipattern docs** — paths to project test-antipattern files (test smells to avoid). If none configured, check for `context/ANTIPATTERNS_TESTING.md` as the default; if that is absent too, skip the antipattern cross-reference
 
 If no config exists, check for `context/TESTING.md` as the default testing doc.
 

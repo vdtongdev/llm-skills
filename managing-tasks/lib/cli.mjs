@@ -143,7 +143,7 @@ function printHelp(code = 0) {
   const help = `Usage: task <command> [args]
 Commands:
   init                            Bootstrap .tasks/ and gitignore
-  new "<title>" [--goal ..] [--file path:kind] [--depends-on id] [--source 'kind=..,ref=..']
+  new "<title>" [--goal ..] [--kind ..] [--file path:kind] [--depends-on id] [--source 'kind=..,ref=..']
   import <batch.yaml>             Atomic batch create; returns label_map
   list [--compact|--all|--ready|--status s|--touching path|--blocked|--archived]
   show <id>
@@ -152,7 +152,7 @@ Commands:
   grep <pattern>
   why <id>
   set-status <id> <status> [--force]
-  edit <id> [--title ..] [--goal ..]
+  edit <id> [--title ..] [--goal ..] [--kind ..]
   add-file <id> <path:kind>       rm-file <id> <path>
   add-change <id> <path> <text>
   add-dep <id> <dep>              rm-dep <id> <dep>

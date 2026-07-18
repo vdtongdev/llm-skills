@@ -30,6 +30,7 @@ Creates one task.
 
 Flags:
 - `--goal "<text>"` — block prose (single line OK; multi-line OK via shell escaping).
+- `--kind <domain>` — freeform skill-domain label for the task (e.g. `coding`, `testing`, `docs`). Optional; not enforced. See `file-format.md` § Field reference.
 - `--file <path>:<kind>` — repeatable. `kind` ∈ {`create`, `modify`, `delete`}; omitted kind defaults to `modify`.
 - `--depends-on <id>` — repeatable. ID must exist and must not be cancelled (exit 2 / exit 4).
 - `--source '<kind=..,ref=..,meta.X=..>'` — repeatable. Single-string format; quote `ref` value with `"..."` if it contains a comma. `kind` and `ref` required; arbitrary `meta.<key>=<val>` pairs folded into `meta: {}`.
@@ -62,7 +63,7 @@ All query commands serialize against mutations via the project lock (5s timeout)
 Default: excludes `done` and `cancelled`; includes `pending`, `in-progress`, `blocked`, and `invalid` rows. 4-line format per task; compact: 1-line.
 
 Flags:
-- `--compact` — 1-line: `[<id>] <STATUS>  <title> (deps: <ids>)`.
+- `--compact` — 1-line: `[<id>] <STATUS>  <title>[ kind:<domain>][ (deps: <ids>)]`. `kind:` appears only when the task has a `kind`.
 - `--all` — include `done` and `cancelled`.
 - `--archived` — include archived tasks.
 - `--status <s>` — comma-separated statuses; overrides default filter.
@@ -81,7 +82,7 @@ Output: YAML with `contract_version`, all task fields, `archived: bool`.
 ### `task next`
 
 If any `in-progress` task has pending subtasks, returns the first pending subtask.
-Otherwise returns the first `pending` task with all deps terminal.
+Otherwise returns the first `pending` task with all deps terminal — appending ` kind:<domain>` when that task has a `kind`, so the agent can load the right skill/antipatterns before starting.
 Otherwise `no ready task`.
 
 Output: single line (not YAML).
@@ -116,9 +117,9 @@ Guards when `<status>` = `done` (skip with `--force`):
 - Any subtask not in {`done`, `cancelled`} → exit 4.
 - Any `depends_on` target not in {`done`, `cancelled`} → exit 4.
 
-### `task edit <id> [--title <t>] [--goal <g>]`
+### `task edit <id> [--title <t>] [--goal <g>] [--kind <k>]`
 
-Overwrites title and/or goal.
+Overwrites title, goal, and/or kind. Each flag is applied only when present; there is no way to clear a field back to empty (consistent with `--title`/`--goal`).
 
 ### File changes
 

@@ -46,8 +46,52 @@ Read from project `CLAUDE.md` under a `/managing-tasks` block:
 - Tasks directory — default `.tasks/`. Override rare; not currently wired.
 - Archive policy — manual only (no auto-archive). Users run `task archive --older-than <days>` or `task archive --id <id>` explicitly.
 - TDD subtask kinds — freeform `kind:` label on subtasks (e.g., `RED`, `GREEN`). Tracker does not enforce.
+- Task kinds — freeform `kind:` label on the whole task (e.g., `coding`, `testing`, `docs`, `infra`). A **task-kinds table** in the project's `CLAUDE.md` maps each value to the skill to invoke and the antipatterns doc to load before working that task. Tracker stores the label but does not enforce it or read the table — the table is consumed by the agent (see "Proactive context loading" below). Recommended table shape:
+
+  ```
+  ## Task kinds (/managing-tasks)
+  | kind    | invoke skill    | load doc                         |
+  |---------|-----------------|----------------------------------|
+  | coding  | /writing-code   | context/ANTIPATTERNS_CODING.md   |
+  | testing | /testing-code   | context/ANTIPATTERNS_TESTING.md  |
+  | docs    | -               | context/STYLE.md                 |
+  ```
+
+  Values are the project's own vocabulary — pick whatever kinds the project actually has. A task with no `kind`, or a `kind` absent from the table, just loads nothing extra.
 
 No config file is required; the CLI works with defaults.
+
+## Proactive context loading
+
+The point of task-level `kind` is to remove the per-session "which skill/docs apply to this task?" guesswork. When you pick up a task to work on — via `task next` or `task show <id>` — both surface the task's `kind` if set (`next` appends ` kind:<domain>`; `show` includes a `kind:` field).
+
+On seeing a `kind`, before touching code:
+
+1. Look up the value in the project `CLAUDE.md` task-kinds table.
+2. Invoke the mapped skill (if any) and read the mapped doc (if any).
+3. Then start the task.
+
+If the project has no task-kinds table, or the task has no `kind`, skip this — proceed as normal. This is agent behavior; the tracker does not invoke skills itself.
+
+## Auto mode
+
+"Auto mode" is when the user asks you to work tasks back-to-back without pausing for direction between each one (e.g. "run the tasks", "auto mode", "keep going through the queue"). It is opt-in — never enter it unless the user asks. When asked:
+
+1. `task next` (or `task list --ready`) to pick the next actionable task.
+2. Apply **Proactive context loading** above for that task's `kind`.
+3. `task set-status <id> in-progress`, do the work, mark subtasks/`done` as you go.
+4. Loop back to step 1 for the next ready task.
+
+Stop the loop and hand back to the user when any of these hits:
+
+- `task next` returns `no ready task` — the queue is drained or everything left is blocked.
+- You get stuck: tried multiple approaches on one task with no progress → **Stop, Simplify, Ask** (do not thrash).
+- The user interrupts.
+
+Auto mode does **not**:
+
+- Run `/reviewing-code` between tasks. Review is batch-end only, on the user's cadence (plan → break down → run → review), not per-task.
+- Try to self-detect "context running low" and stop or offboard on its own. It cannot reliably measure that. The user watches context and interrupts; that interrupt is the offboard trigger, same as any session.
 
 ## Integration contract
 
@@ -66,7 +110,7 @@ Full per-command schemas: `references/integration-contract.md`.
 
 ## File format
 
-Every task file: `schema: 1` at top; `uid` (ULID, immutable), `id` (human-readable string), `title`, `status` required. Optional: `depends_on`, `depends_on_uids`, `goal`, `files[]`, `tests[]`, `notes[]`, `subtasks[]`, `sources[]`. Filename prefix sets display order; ULID is identity. Full shape and rules: `references/file-format.md`.
+Every task file: `schema: 1` at top; `uid` (ULID, immutable), `id` (human-readable string), `title`, `status` required. Optional: `kind`, `depends_on`, `depends_on_uids`, `goal`, `files[]`, `tests[]`, `notes[]`, `subtasks[]`, `sources[]`. `kind` is a freeform skill-domain label (e.g. `coding`, `testing`) that drives proactive context loading — see "Task kinds" under Project configuration. Filename prefix sets display order; ULID is identity. Full shape and rules: `references/file-format.md`.
 
 ## Invariants
 

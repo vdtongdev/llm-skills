@@ -10,11 +10,12 @@ export function renderListLine(t, { compact = false } = {}) {
   if (t.status === "invalid") {
     return `[?] INVALID  ${t.file}: ${t.error}`;
   }
+  const kindTag = t.kind ? ` kind:${t.kind}` : "";
   if (compact) {
     const deps = t.depends_on?.length ? ` (deps: ${t.depends_on.join(", ")})` : "";
-    return `[${t.id}] ${t.status.toUpperCase()}  ${t.title}${deps}`;
+    return `[${t.id}] ${t.status.toUpperCase()}  ${t.title}${kindTag}${deps}`;
   }
-  const lines = [`[${t.id}] ${t.status.toUpperCase()}  ${t.title}`];
+  const lines = [`[${t.id}] ${t.status.toUpperCase()}  ${t.title}${kindTag}`];
   lines.push(`    ${firstLine(t.goal) || "—"}`);
   lines.push(`    Files: ${summarizeFiles(t.files) || "—"}`);
   const deps = t.depends_on?.length ? `Deps: ${t.depends_on.join(", ")}` : "Deps: —";
@@ -36,6 +37,7 @@ export function renderShow(t) {
     uid: t.uid,
     title: t.title,
     status: t.status,
+    kind: t.kind,
     depends_on: t.depends_on,
     goal: t.goal,
     files: t.files,

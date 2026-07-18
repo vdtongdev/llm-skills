@@ -68,6 +68,7 @@ tasks:
     title: Add get_mtd_summary endpoint
     goal: |
       Expose MTD revenue/expense grouped by currency.
+    kind: coding               # optional; freeform skill-domain label
     status: pending            # optional; defaults to pending
     depends_on: []             # IDs outside this batch
     depends_on_labels: []      # labels within this batch
@@ -108,6 +109,7 @@ Atomicity: any failure during write rolls back all written files. Zero tasks cre
 
 Per-task quality gates enforced by `/planning-tasks` before submit:
 - `title`, `goal`, ≥1 `files[]` entry, ≥1 `tests[]` or `notes[]` entry, ≥1 `sources[]` entry.
+- `kind` — optional but encouraged; set it to the task's skill-domain (e.g. `coding`, `testing`, `docs`) when the project's `CLAUDE.md` defines a task-kinds table, so the executing agent auto-loads the right skill/antipatterns.
 - Split tasks >3 files AND >5 changes bullets.
 - Separate tasks per subsystem (backend/frontend/tests/infra).
 - TDD RED/GREEN subtask pairs only where TDD is project-mandated and the layer supports it (unit/API/integration/component, not E2E).

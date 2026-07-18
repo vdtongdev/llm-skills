@@ -71,7 +71,7 @@ export async function cmdSetStatus(cwd, args) {
   });
 }
 
-/** Update title or goal of a task. */
+/** Update title, goal, or kind of a task. */
 export async function cmdEdit(cwd, args) {
   const id = args._[0];
   if (!id) throw new ValidationError("task edit <id>");
@@ -82,6 +82,7 @@ export async function cmdEdit(cwd, args) {
     const data = raw(t);
     if (args.title) data.title = args.title;
     if (args.goal) data.goal = args.goal;
+    if (args.kind) data.kind = args.kind;
     await save(cwd, data, taskFilePath(cwd, t));
     await refreshCache(cwd);
     return { contract_version: 1, id: t.id };

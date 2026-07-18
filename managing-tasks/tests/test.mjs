@@ -55,6 +55,14 @@ test("schema: float subtask id rejected", () => {
   }), /subtasks\[\].id must be string/);
 });
 
+test("schema: optional kind must be string", () => {
+  validateTaskFile({ schema: 1, uid: "U", id: "1", title: "t", status: "pending", kind: "coding" });
+  assert.throws(
+    () => validateTaskFile({ schema: 1, uid: "U", id: "1", title: "t", status: "pending", kind: 3 }),
+    /kind must be string/,
+  );
+});
+
 test("schema: batch label collision rejected", () => {
   assert.throws(() => validateBatch({
     schema: 1,
@@ -150,6 +158,53 @@ test("cli: import + list + show happy path", async () => {
     const show = await runCLI(dir, "show", "1");
     assert.match(show.out, /uid:/);
     assert.match(show.out, /first/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("cli: kind round-trips through new, show, edit, and import", async () => {
+  const dir = await scratch();
+  try {
+    await runCLI(dir, "init");
+
+    // new --kind persists and shows
+    await runCLI(dir, "new", "coded task", "--kind", "coding");
+    let show = await runCLI(dir, "show", "1");
+    assert.match(show.out, /kind: coding/);
+
+    // edit --kind changes it
+    const e = await runCLI(dir, "edit", "1", "--kind", "docs");
+    assert.equal(e.code, 0);
+    show = await runCLI(dir, "show", "1");
+    assert.match(show.out, /kind: docs/);
+
+    // import carries per-task kind through to disk
+    await writeFile(join(dir, "batch.yaml"), YAML.stringify({
+      schema: 1,
+      tasks: [{ title: "imported", kind: "testing" }],
+    }));
+    await runCLI(dir, "import", "batch.yaml");
+    show = await runCLI(dir, "show", "2");
+    assert.match(show.out, /kind: testing/);
+
+    // surfaced in next and compact list
+    const next = await runCLI(dir, "next");
+    assert.match(next.out, /kind:/);
+    const list = await runCLI(dir, "list", "--compact");
+    assert.match(list.out, /kind:docs/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("cli: task without kind omits it from show output", async () => {
+  const dir = await scratch();
+  try {
+    await runCLI(dir, "init");
+    await runCLI(dir, "new", "plain task");
+    const show = await runCLI(dir, "show", "1");
+    assert.doesNotMatch(show.out, /kind:/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

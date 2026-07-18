@@ -27,6 +27,7 @@ export function validateTaskFile(obj, { filename = "<task>" } = {}) {
   requireString(obj, "title", filename);
   requireString(obj, "status", filename);
   if (!STATUSES.has(obj.status)) throw new ValidationError(`${filename}: unknown status ${obj.status}`);
+  if (obj.kind != null && typeof obj.kind !== "string") throw new ValidationError(`${filename}: kind must be string`);
   if (obj.depends_on != null) {
     if (!Array.isArray(obj.depends_on)) throw new ValidationError(`${filename}: depends_on must be array`);
     for (const d of obj.depends_on) {

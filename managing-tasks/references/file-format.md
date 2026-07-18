@@ -10,6 +10,7 @@ uid: "01HZABCDEFGHJKMNPQRSTVWXYZ"
 id: "7"
 title: Wire dashboard MTD component
 status: in-progress
+kind: coding
 depends_on: ["4"]
 depends_on_uids: ["01HZ...4..."]
 goal: |
@@ -50,6 +51,7 @@ sources:
 | `id` | yes | string | Human-readable. May change on `renumber` or merge-conflict. **Always quote** — bare `7` would parse fine but bare `2.1` parses as float. |
 | `title` | yes | string | Imperative one-liner. |
 | `status` | yes | string | One of `pending`, `in-progress`, `done`, `blocked`, `cancelled`. |
+| `kind` | no | string | Freeform skill-domain label for the whole task (e.g. `coding`, `testing`, `docs`, `infra`). Not enforced, no enum. The consuming project's `CLAUDE.md` maps each value to a skill + antipatterns doc to load before working the task. Distinct from `subtasks[].kind`, which labels TDD phase (RED/GREEN), not domain. |
 | `depends_on` | no | string[] | IDs only. Resolved via `uid` on merge. |
 | `depends_on_uids` | no | string[] | Mirror of `depends_on` via ULID. Maintained automatically on write; canonical during merge-conflict resolution. |
 | `goal` | no | string | Block scalar (`|`) for multi-line prose. |
@@ -80,6 +82,8 @@ subtasks:
     status: pending | in-progress | done | blocked | cancelled
     kind: string (optional; freeform label like RED / GREEN)
 ```
+
+`subtasks[].kind` labels the *phase* of a subtask (typically TDD RED/GREEN). It is a different axis from the task-level `kind`, which labels the *skill-domain* of the whole task. A task with `kind: coding` can still hold RED/GREEN subtasks — the two never collide because they live at different levels.
 
 If a subtask needs its own `depends_on`, `files`, or `sources`, promote it to a top-level task instead.
 

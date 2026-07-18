@@ -13,9 +13,11 @@ If the file doesn't exist, tell the user: "No session state found — starting f
 If the file exists, internalize these key sections before proceeding:
 
 - **Task** — what to work on
+- **Docs That Will Need Reading** — doc files and skills to load before starting, not after
 - **Failed Approaches** — what NOT to try again (highest value — don't skip this)
 - **Work Checklist** — what's incomplete or in-progress
 - **Uncommitted Changes** — is the working tree dirty or stashed?
+- **Discussion Summary** — how prior decisions were reached (if present)
 - **Decisions & Open Questions** — context that shaped the approach
 
 ---
@@ -63,8 +65,8 @@ If the tracker is present and a task ID exists:
 
 ## Step 4 — Read Key Files
 
+- Read every doc and invoke every skill listed in SESSION_STATE's "Docs That Will Need Reading" section — do this before reading anything else, it's the point of that section
 - Read files from SESSION_STATE "Work Checklist" that are marked `[-]` (in-progress) or relevant `[ ]` (not started) items you'll work on next
-- DO read relevant instruction files relevant to ongoing tasks.
 - Do NOT re-read all context docs — only read task-relevant ones
 - Do NOT re-read completed files unless you need to understand their interface for current work
 
