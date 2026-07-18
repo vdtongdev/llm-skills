@@ -13,13 +13,14 @@ User is the judge. Claude and Codex are attorneys.
 - PRD passed step 5a (completeness reviewer approved).
 - PRD is self-contained — Codex only reads the PRD, no repo access.
 - PRD includes Context Primer, Breadth Checklist, Key Assumptions, Known Risks sections (see `prd-template.md`).
+- `codex` CLI is installed and executable on PATH.
 
 ## Round 1: Invoke Codex
 
-Call via companion `task` subcommand:
+Call the Codex CLI directly:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/cache/openai-codex/codex/*/scripts}/codex-companion.mjs" task "<prompt>"
+codex exec "<prompt>"
 ```
 
 Use `Bash(..., run_in_background: true)`. Harness notifies on completion.
@@ -86,10 +87,10 @@ Workflow: before sending a rebuttal that cites new codebase facts, edit the rele
 
 ## Round N+1: Continue via resume
 
-Each subsequent round uses `--resume-last` to continue the Codex thread:
+Each subsequent round resumes the same Codex session:
 
 ```bash
-node "...codex-companion.mjs" task --resume-last "<claude_rebuttal>"
+codex exec resume --last "<claude_rebuttal>"
 ```
 
 ## Stopping

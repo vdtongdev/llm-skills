@@ -102,11 +102,11 @@ Catches idea-level flaws: unvalidated assumptions, missing failure modes, scope 
 
 **Loop:**
 
-1. Claude invokes Codex via companion `task` with full PRD text
+1. Claude invokes Codex via `codex exec` with full PRD text
 2. Codex emits findings (bundled, numbered) plus any questions
 3. Stop. Present findings to user.
 4. User decides: continue, stop, or update PRD now
-5. If continue: Claude drafts open-minded rebuttal (concede where valid, push back with codebase evidence), sends via `task --resume-last`
+5. If continue: Claude drafts open-minded rebuttal (concede where valid, push back with codebase evidence), sends via `codex exec resume --last`
 6. Repeat from step 2 until user stops
 
 No round cap. User judges.
