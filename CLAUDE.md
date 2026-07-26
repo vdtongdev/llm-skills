@@ -26,14 +26,13 @@
 **DO**: Think about and point out a better approach than what the user is asking, if applicable. Explain pros and cons in a few bullets. If the current request is still reasonable, proceed, unless the alternative avoids serious risk or wasted work.
 **DON'T**: Don't use claude's built-in memory file. I have specific skills designed to manage out-of-session memory (/preserving-session-memory), so claude's is inferior and duplicate
 
-**DO**: Use sequential-thinking proactively. Assume the MCP is always installed.
-
 **DO**: Spawn a code review agent - or better, an adversarial code review agent - before finalizing work.
 **DON'T**: Don't forget antipatterns, if the project provides them.
 
 ## Third opinions with codex
 
-- `codex` CLI is a useful source of a second or third opinion. Precondition: `codex` is installed and executable on PATH (the path differs across machines - host vs dev container - so don't hardcode it).
-- When asked for a third opinion, invoke `codex exec "<prompt>"` with the relevant context.
-- If the discussion runs more than one round, continue with `codex exec resume --last "<prompt>"` to preserve context and get a more informed response.
+- `codex` CLI is a useful source of a third opinion. Invoke `codex exec "<prompt>"` with the relevant context.
+- If the discussion runs more than one round, continue with `codex exec resume <session-id> "<prompt>"` to preserve context and get a more informed response. Prefer the explicit session id over `--last`. Confirm you have the right one by grepping (`~/.codex/sessions`) the transcript for a phrase you remember from the reply.
+- **Sandbox failure inside a dev container.** If (**and only if**) this env is a sandbox dev env, use `codex exec --dangerously-bypass-approvals-and-sandbox "<prompt>"` instead. Otherwise codex's sandbox `bwrap` will fail to run.
+  - Never run `--dangerously-bypass-approvals-and-sandbox` unless you are certain you are in a sandboxed environment. If you are not sure which you are on, ask instead of assuming.
 - Codex can surface insights and overlooked details. Weigh them, don't accept blindly.
