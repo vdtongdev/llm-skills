@@ -54,6 +54,10 @@ tasks:
     sources:
       - kind: prd
         ref: context/prd-dashboard.md#implementation-details-frontend
+    context:
+      - kind: file
+        ref: frontend/src/components/README.md
+        why: the store-access convention this component must follow
 ```
 
 ## Per-task quality checklist
@@ -65,12 +69,14 @@ Enforce every item before submitting. If any fails, fix the PRD + batch, don't p
 | `title` | Imperative, specific, one line. |
 | `goal` | One sentence. Answers "what capability does this add". |
 | `files[]` | ≥1 entry. Each has `path`, `kind`, and ≥1 `changes` bullet. |
-| `tests[]` or `notes[]` | At least one populated. Tests named with expected outcome (input → output). |
+| `tests[]` or `notes[]` | At least one populated. Tests named with expected outcome (input → output). `tests[]` is required for a production-code task unless its layer's convention is `tests-after` or `none`. |
 | `sources[]` | ≥1 entry. Default `kind: prd`, `ref: <prd-path>#<section>`. |
+| `context[]` | Optional. Only what this task needs *beyond* what its `kind` resolves to: `kind` (`file`/`skill`/`doc`), `ref`, one-clause `why`. An entry identical on every task of the layer belongs in the project's task-kinds table, not here. |
 | `kind` (task) | Optional but encouraged. Skill-domain (`coding`/`testing`/`docs`/...) from the project's `CLAUDE.md` task-kinds table. Dominant domain for mixed tasks. Distinct from `subtasks[].kind` (RED/GREEN phase). |
 | Granularity | Split if >3 files AND >5 total change bullets. Split per subsystem. |
 | Deps | Every `depends_on` / `depends_on_labels` reason-backed. No implicit chains. |
-| Subtasks (TDD) | Only where project mandates TDD and layer supports it (unit/API/integration/component, not E2E). |
+| TDD shape | **Blocking.** Scope is decided by `files[]` (does the task write production code?), not by the breakdown's own assertion. Each in-scope task satisfies exactly one of: RED/GREEN subtasks with RED first (`tdd`); a populated `tests[]` (`tests-required`); or a `notes` entry naming a deviation from its layer's declared convention, prefixed `test-exempt:` so it is greppable. Silence is not a deviation. See `SKILL.md` § The TDD gate. |
+| Testing convention | Read the project's testing conventions, normally in its `CLAUDE.md`, and apply them per layer. If the project declares none, ask the user before generating the batch. Do not default silently. |
 
 ## Source envelope format
 

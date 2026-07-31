@@ -58,6 +58,7 @@ Round 2+ (when resumed with Claude's rebuttal):
 - Open the response with a one-line status per standing finding: `Finding N: <disputed|conceded|resolved>`. Use the original numbers.
 - Focus on resolving existing findings. Don't introduce net-new attacks unless a new question opened them — the author can't converge if the target keeps moving.
 - If Claude provided codebase evidence that resolves a finding, mark it resolved and move on.
+- **The text written to close a conceded finding is new, unreviewed prose. Attack it explicitly.** A fix being written down is not the fix being correct. The rebuttal will name which sections the last round caused to be rewritten; those are the round's primary target, and a defect there counts as a net-new finding rather than a moving target.
 
 PRD:
 
@@ -68,10 +69,12 @@ PRD:
 
 After Codex's first response, Claude drafts a rebuttal. Stance:
 
+- **Verify every quote before triaging it.** Codex has no repo access, so its quotes come from the PRD, and the PRD's own citations may be stale. Spot-check each quoted path, symbol and line against the tree. A finding resting on a stale citation is rejected on that basis, and the citation is fixed in the PRD.
 - **Concede cleanly** when Codex has a point. No performative pushback.
 - **Push back with evidence** when the PRD or codebase supports it. Cite file paths, function names, existing patterns.
 - **Answer Codex's questions** if it asked any. Read the codebase, return specific facts.
 - **Flag user-judgment findings** — risks that aren't objectively right or wrong, where only the user can rule.
+- **Disclose your own findings in the same pass.** Defects Claude noticed while working the round get reported to the user alongside Codex's, marked as self-found. They are usually the cheap ones (a stale count, an omitted file, a section that contradicts another) and nothing else in the loop is looking for them.
 
 No fake politeness. No performative agreement. No bikeshedding marginal findings.
 
@@ -87,11 +90,18 @@ Workflow: before sending a rebuttal that cites new codebase facts, edit the rele
 
 ## Round N+1: Continue via resume
 
-Each subsequent round resumes the same Codex session:
+Before resuming, consolidate the PRD (`SKILL.md` § 5c) and re-run the scoped 5a. Do not send a rebuttal that references sections you have not yet rewritten.
+
+Each subsequent round resumes the same Codex session by its explicit id, never `--last`:
 
 ```bash
-codex exec resume --last "<claude_rebuttal>"
+codex exec resume <session-id> "<claude_rebuttal>" < /dev/null
 ```
+
+- Confirm the id by grepping `~/.codex/sessions` for a phrase you remember from the previous reply.
+- Redirect stdin, or the call hangs waiting on it.
+- Flags such as `-s` / `--skip-git-repo-check` must precede `resume`, not follow it.
+- The rebuttal names which sections the previous round caused to be rewritten, so the reviewer can target them.
 
 ## Stopping
 

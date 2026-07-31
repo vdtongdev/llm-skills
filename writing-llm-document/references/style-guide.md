@@ -85,6 +85,24 @@ When querying across this date, handle resolution change explicitly.
 | Anti-patterns       | Session-specific notes             |
 | Pseudocode          | Verbose real code                  |
 
+## Rules That Must Bind
+
+A rule the reader may not skip has to be written as an obligation and placed where compliance is checked. Two failure modes, both silent:
+
+**Description instead of obligation.** A rule phrased as a fact gets dropped under context pressure, because nothing in it says the reader owes an action.
+
+```text
+# BAD: describes where a rule applies
+"TDD RED/GREEN split applies to unit, API and component tests."
+
+# GOOD: states what the writer owes
+"Every task that writes production code satisfies exactly one of: ..."
+```
+
+**Stated in the prose but absent from the checklist.** If a document has an enforced list (a gate table, a pre-submit checklist, a definition of done), a binding rule appears in BOTH the prose and that list. A rule mentioned only in prose is advisory in practice, however emphatic the wording. When the two disagree, readers follow the checklist.
+
+Corollary: adding a fifth mention of a rule that is already stated four times does not make it bind. Move it into the enforced list and delete the escape hatches ("only where the project mandates...", "where applicable") instead.
+
 ## Anti-Patterns
 
 ```text

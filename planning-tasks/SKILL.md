@@ -102,18 +102,68 @@ Catches idea-level flaws: unvalidated assumptions, missing failure modes, scope 
 
 **Loop:**
 
-1. Claude invokes Codex via `codex exec` with full PRD text
+1. Claude invokes Codex via `codex exec` with full PRD text. Record the session id, the model, and the repo HEAD at pass start.
 2. Codex emits findings (bundled, numbered) plus any questions
-3. Stop. Present findings to user.
-4. User decides: continue, stop, or update PRD now
-5. If continue: Claude drafts open-minded rebuttal (concede where valid, push back with codebase evidence), sends via `codex exec resume --last`
-6. Repeat from step 2 until user stops
+3. Verify before triaging. Codex has no repo access, so every quote it makes comes from the PRD, and the PRD's own citations may be stale. Spot-check each quoted path, symbol and line against the tree. A finding built on a stale citation is rejected on that basis, and the citation gets fixed.
+4. Stop. Present findings to user, alongside any defects Claude found in the same pass that Codex did not. Self-disclosure is part of the round, not a favour.
+5. User decides: continue, stop, or update PRD now
+6. If continue: consolidate the PRD per 5c, re-run the scoped 5a, then draft an open-minded rebuttal (concede where valid, push back with codebase evidence) and send it with `codex exec resume <session-id> "<rebuttal>"`
+7. Repeat from step 2 until user stops
 
 No round cap. User judges.
 
-**Claude's role:** attorney, not postman. Open-minded — agree when sensible, push back with evidence when not. No performative agreement, no fake politeness. If Codex asks a codebase question, Claude reads and answers.
+**Scope each round at the previous round's new text.** A fix written into the PRD is unreviewed prose. In field use, each round's HIGH severity finding was found in text the previous round's fix had just written, three rounds running. Tell Codex where the new text is.
+
+**Resume mechanics:** always the explicit session id, never `--last`. Confirm the id by grepping `~/.codex/sessions` for a phrase from the previous reply. Redirect stdin (`< /dev/null`) so the call does not hang. On the `resume` subcommand, flags like `-s` / `--skip-git-repo-check` must precede `resume`.
+
+**Claude's role:** attorney, not postman. Open-minded, agree when sensible, push back with evidence when not. No performative agreement, no fake politeness. If Codex asks a codebase question, Claude reads and answers.
 
 **After user stops:** Claude summarizes standing findings into conceded / disputed / accepted-risk. Updates PRD per user's rulings.
+
+#### 5c. Consolidate the PRD After Each Round
+
+The PRD states the current design. It is not a changelog of how that design was reached.
+
+After the user rules on a round's findings, edit the affected sections in place. Never append.
+
+BAD, accumulates:
+
+> Feature X. Round 1 found issue Y, fixed by Z. Round 2 found A; accepted fix B.
+
+GOOD, consolidates:
+
+> Feature X. Design: B. B is required because \<invariant\>; without it, \<concrete failure\>.
+
+**Stays in the requirement:**
+
+- The current design.
+- Rationale for any constraint that looks removable but is not. Test: could a competent implementer delete this clause as an obvious simplification without realising what breaks? If yes, keep one line naming the invariant and the concrete failure, not the round that found it.
+
+**Leaves the requirement**, moving to the decision record:
+
+- Superseded designs, and the narrative of how the current one was reached
+- Rejected alternatives and the user's rulings
+- Round numbers, finding ids, reviewer names, session ids
+
+**Consolidation discipline.** Rewriting is how new defects enter, so consolidate narrowly:
+
+- Patch the smallest coherent block. Do not redraft a section to fix one clause.
+- Keep requirement ids stable, so an accidental deletion is visible.
+- Re-run 5a, scoped to the edited sections plus everything citing them, before firing the next 5b round. An internal contradiction is not worth an adversarial round.
+
+##### The Decision Record
+
+Sibling file: `context/prd-<feature>-decisions.md`. One entry per settled decision:
+
+- **Decision** - what was ruled
+- **Rationale** - why, in the present tense
+- **Status** - accepted | rejected | accepted-risk
+- **Scope** - where it applies
+- **Reopen only if** - the evidence that would justify revisiting it
+
+"Reopen only if" replaces a bare "do not re-litigate": a settled decision should be reopenable on new evidence, but not on a reviewer's fresh guess.
+
+5b receives the PRD plus this register, not the deliberation transcript. The register is what stops a reviewer re-raising settled findings; the transcript would anchor it on designs that no longer exist.
 
 ### 6. Create Tasks
 
@@ -126,28 +176,69 @@ Otherwise, build a batch-import YAML from the PRD's Implementation Details secti
 - `title` — imperative, specific, one line
 - `goal` — one sentence answering "what capability does this add"
 - `files` — ≥1 entry, each with `path`, `kind` (`create`|`modify`|`delete`), and ≥1 `changes` bullet
-- At least one of `tests` OR `notes` populated
+- `tests` - required for any task that writes production code, unless its layer's convention is `tests-after` or `none` (see the TDD gate below). Otherwise, at least one of `tests` OR `notes` populated
+- **TDD shape** - blocking. See below
 - `sources` — ≥1 entry pointing back to the PRD (e.g., `kind: prd, ref: context/prd-X.md#section-name`)
+- `context` - optional. What an executor must read or activate *beyond* what the task's `kind` already resolves to: a file carrying a convention the task must follow, a skill the task needs invoked. Each entry is `kind` (`file`|`skill`|`doc`), `ref`, and a one-clause `why`. Anything that would be identical on every task of the same layer belongs in the project's task-kinds table instead - copying it here duplicates it in two places, where it then goes stale in one.
 - `kind` — optional but encouraged. Set the task's skill-domain (e.g. `coding`, `testing`, `docs`, `infra`) so the executing agent auto-loads the right skill/antipatterns per the project's `CLAUDE.md` task-kinds table. Pick the value from that table's vocabulary; for a task that both writes code and its tests, use the dominant domain (usually `coding` — the RED/GREEN split is already captured by `subtasks[].kind`). Omit `kind` if the project defines no task-kinds table. Do not confuse this task-level `kind` (domain) with `subtasks[].kind` (RED/GREEN phase).
+
+**The TDD gate (blocking):**
+
+When breaking down tasks, take the project's testing conventions into account. They are normally written in the project's `CLAUDE.md`, and they decide this gate. A useful shape, if the project has not already declared one:
+
+| Layer               | Policy         |
+| ------------------- | -------------- |
+| backend, api        | tdd            |
+| frontend components | tests-required |
+| e2e                 | tests-after    |
+| docs, infra         | none           |
+
+- `tdd` - a RED subtask ordered before a GREEN subtask. Test-first is mandatory. Encode the phase as `subtasks[].kind`; each subtask carries its own `status`.
+- `tests-required` - tests ship in the same task, ordering not mandated. Fits frontend behaviour, where state transitions and error states are specifiable in advance but layout is discovered while building.
+- `tests-after` / `none` - no test subtask required. E2E normally lands here; follow whatever the project says.
+
+**Determine which tasks the gate applies to from `files[]`, not from a judgement call.** A task whose `files[]` include production code paths is in scope. Do not let the breakdown assert its own exemption.
+
+**Every in-scope task satisfies exactly one of:**
+
+- **a.** RED/GREEN subtasks in the same task, RED ordered before GREEN (policy `tdd`)
+- **b.** a `tests[]` list naming the cases, in the same task (policy `tests-required`)
+- **c.** a `notes` entry naming the deviation and why, where the task departs from its layer's declared convention. Prefix it `test-exempt:` so it is greppable and conspicuous in review
+
+Silence is not option (c). A production-code task with no subtasks, no `tests[]` and no stated deviation fails the gate and is not submitted.
+
+**If the project declares no testing convention, ask the user once** before generating the batch, and offer to write the answer into the project's `CLAUDE.md`. Do not silently default in either direction.
 
 **Granularity rules:**
 
 - Split any task that touches 3+ files AND has >5 total change bullets.
 - Split per subsystem when a PRD section spans backend/frontend/tests/infra — one task per subsystem.
-- TDD RED/GREEN split applies to unit, API, integration, and component tests — NOT E2E. Encode RED/GREEN as `subtasks[].kind` labels; each subtask carries its own `status`.
 
 **Dependency derivation rules:**
 
 - If task A creates a file task B references, B `depends_on: [A]`.
 - If task A's backend work must land before task B's frontend consumes it, B depends on A.
-- Tests depending on production code: add a dep (or use TDD RED/GREEN subtasks, which use ordering, not deps).
+- Under a `tdd` policy, tests come FIRST. Keep them as RED/GREEN subtasks inside one task, which order by position rather than by deps. Do not split the failing test into its own task that the coding task depends on: that task can never reach `completed`, because its test is meant to stay red until the next task lands.
+- Under `tests-after`, a separate test task may depend on the production task. Never under `tdd` - a test task depending on production code is test-after by construction.
 - No implicit "last-added-depends-on-previous" chain. Every dep is explicit and reason-backed.
 
 **Batch file format & submission:**
 
 Write to `.tasks/.import-<feature-slug>.yaml`. Full schema and example: `references/managing-tasks-integration.md`.
 
-Present the batch to the user for review — show the computed dep graph. User may edit the file before submitting.
+Present the batch to the user for review - show the computed dep graph, plus a TDD compliance summary so a cheap exemption is conspicuous rather than buried. Derive it by counting the batch you just wrote:
+
+```
+Production-code tasks: 14
+  RED/GREEN (tdd):             11
+  tests[] (tests-required):     2
+  Deviations needing approval:  1
+    - add-session-guard: test-exempt: migration-only, verified by alembic check
+```
+
+A task in none of those three buckets is a gate failure, not a fourth bucket. Fix it before presenting.
+
+User may edit the file before submitting.
 
 Submit with: `task import .tasks/.import-<feature-slug>.yaml`. Consume the returned `label_map` for any downstream references. Delete the batch file on success.
 
@@ -180,6 +271,8 @@ Example TDD subtask split inside the batch:
 ## What Makes a Good Plan
 
 - Executor can start task 1 without reading any context doc other than the PRD
+- Every requirement names its dependencies explicitly. It may cite the Context Primer, Key Assumptions or another requirement by anchor, but a reader must never discover a behaviour by reading review history or an unrelated requirement
+- Do not inline a shared rule into several requirements to make each self-contained. Duplicated rules diverge. Cite the single normative statement instead
 - File paths are project-relative, never "the file" or "the test"
 - Function signatures include types, not just names
 - Test cases are enumerated, not "add appropriate tests"

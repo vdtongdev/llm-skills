@@ -99,6 +99,20 @@ Explicit boundaries. What this feature does NOT do.
 
 - `path/to/old_file.py` — why it's no longer needed
 
+### Execution Order
+
+Numbered dependency order. Each step is at least one commit.
+
+1. `<requirement or file group>` - what lands here
+2. `<...>` - what lands here, and why it comes after step 1 when the reason is not obvious from the dependency
+
+State the reason only where the order is load-bearing: a step placed early to close a window,
+a step forced last because it resolves through structures earlier steps create, or a group that
+must land in ONE commit to keep the tree consistent. Ordering that follows plainly from
+"B imports A" needs no reason.
+
+`Files to Create/Modify/Delete` is a set, not a sequence - ordering facts have no other home.
+
 ### Test Plan
 
 - Test cases (input -> expected status + response/result)

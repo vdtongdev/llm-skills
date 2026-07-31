@@ -21,7 +21,7 @@ an executor who has zero codebase context beyond the PRD itself.
 | File Paths | All paths are project-relative, none say "the file" or "the test" |
 | Interfaces | New functions have signatures with types, not just names |
 | Test Cases | Tests are enumerated with inputs/outputs, not "add appropriate tests" |
-| Dependencies | Tasks can be executed in order without asking "what first?" |
+| Dependencies | `Execution Order` present and numbered; tasks executable in that order without asking "what first?"; load-bearing ordering carries its reason |
 
 ## Calibration
 
