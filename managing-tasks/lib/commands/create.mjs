@@ -31,6 +31,7 @@ export async function cmdNew(cwd, args) {
     }
     const files = parseFileFlags(args.file);
     const sources = parseSourceFlags(args.source);
+    const context = parseContextFlags(args.context);
     const task = {
       schema: SCHEMA_VERSION,
       uid,
@@ -43,6 +44,7 @@ export async function cmdNew(cwd, args) {
       goal: args.goal || "",
       files: files.length ? files : undefined,
       sources: sources.length ? sources : undefined,
+      context: context.length ? context : undefined,
     };
     validateTaskFile(task, { filename });
     const target = join(cwd, TASKS_DIR, filename);
@@ -59,7 +61,7 @@ export async function cmdNew(cwd, args) {
  * Rolls back all written files on any failure.
  * @returns {{ contract_version: 1, label_map: object, created: number }}
  */
-export async function cmdImport(cwd, path) {
+export async function cmdImport(cwd, path, args = {}) {
   if (!path) throw new ValidationError("task import <batch.yaml>");
   const abs = resolve(cwd, path);
   let batch;
@@ -127,6 +129,7 @@ export async function cmdImport(cwd, path) {
         notes: e.notes,
         subtasks: e.subtasks,
         sources: e.sources,
+        context: e.context,
       };
       validateTaskFile(task, { filename: a.filename });
       writes.push({ path: join(cwd, TASKS_DIR, a.filename), content: YAML.stringify(stripUndefined(task)) });
@@ -176,6 +179,29 @@ function parseFileFlags(val) {
 function parseSourceFlags(val) {
   const vals = [].concat(val || []).filter(Boolean);
   return vals.map((v) => parseSourceString(v));
+}
+
+function parseContextFlags(val) {
+  const vals = [].concat(val || []).filter(Boolean);
+  return vals.map((v) => parseContextString(v));
+}
+
+/**
+ * Parse a context specifier: 'kind=file,ref=a/b.py,why=the write seam'.
+ * Same single-string envelope as --source, including quoted values containing commas.
+ */
+export function parseContextString(s) {
+  const out = {};
+  for (const tok of tokenizeCSV(s)) {
+    const eq = tok.indexOf("=");
+    if (eq < 0) throw new ValidationError(`context: token without = (${tok})`);
+    const k = tok.slice(0, eq).trim();
+    const v = unquote(tok.slice(eq + 1).trim());
+    if (k === "kind" || k === "ref" || k === "why") out[k] = v;
+    else throw new ValidationError(`context: unknown key ${k} (expected kind, ref, why)`);
+  }
+  if (!out.kind || !out.ref) throw new ValidationError("context: kind and ref required");
+  return out;
 }
 
 /**

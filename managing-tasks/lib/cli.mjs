@@ -13,6 +13,7 @@ import {
   cmdSetStatus, cmdEdit, cmdAddFile, cmdRmFile, cmdAddChange,
   cmdAddDep, cmdRmDep, cmdAddSubtask, cmdEditSubtask,
   cmdAddNote, cmdAddTest, cmdAddSource, cmdRmSource,
+  cmdAddContext, cmdRmContext,
   cmdMove, cmdRm, cmdCancel, cmdReopen,
 } from "./commands/mutate.mjs";
 import { cmdArchive, cmdReindex, cmdRenumber, cmdMigrate } from "./commands/lifecycle.mjs";
@@ -40,6 +41,8 @@ const ROUTER = {
   "add-test": cmdAddTest,
   "add-source": cmdAddSource,
   "rm-source": cmdRmSource,
+  "add-context": cmdAddContext,
+  "rm-context": cmdRmContext,
   move: cmdMove,
   rm: cmdRm,
   cancel: cmdCancel,
@@ -143,7 +146,7 @@ function printHelp(code = 0) {
   const help = `Usage: task <command> [args]
 Commands:
   init                            Bootstrap .tasks/ and gitignore
-  new "<title>" [--goal ..] [--kind ..] [--file path:kind] [--depends-on id] [--source 'kind=..,ref=..']
+  new "<title>" [--goal ..] [--kind ..] [--file path:kind] [--depends-on id] [--source 'kind=..,ref=..'] [--context 'kind=..,ref=..,why=..']
   import <batch.yaml>             Atomic batch create; returns label_map
   list [--compact|--all|--ready|--status s|--touching path|--blocked|--archived]
   show <id>
@@ -160,6 +163,7 @@ Commands:
   edit-subtask <id> <sub> [--status ..] [--title ..]
   add-note <id> <text>            add-test <id> <text>
   add-source <id> --source '..'   rm-source <id> <ref>
+  add-context <id> --kind k --ref r [--why w]                rm-context <id> <ref>
   move <id> --after <other>
   rm <id> [--force]               cancel <id> [--force]              reopen <id>
   archive --id <id> | --older-than <days>

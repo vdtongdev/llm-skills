@@ -35,7 +35,7 @@ Binary: `~/.claude/skills/managing-tasks/bin/task` (Node shim). Projects alias t
 
 Every command prints YAML on stdout (starts with `contract_version: 1`) or a formatted multi-line block for human-oriented commands (`list`, `show`, `deps`, `grep`, `why`, `next`). Errors go to stderr; exit code classifies the failure (see `references/exit-codes.md`).
 
-Quick reference: `init | new | import | list | show | next | deps | grep | why | set-status | edit | add-file | rm-file | add-change | add-dep | rm-dep | add-subtask | edit-subtask | add-note | add-test | add-source | rm-source | move | rm | cancel | reopen | archive | reindex | renumber | migrate`.
+Quick reference: `init | new | import | list | show | next | deps | grep | why | set-status | edit | add-file | rm-file | add-change | add-dep | rm-dep | add-subtask | edit-subtask | add-note | add-test | add-source | rm-source | add-context | rm-context | move | rm | cancel | reopen | archive | reindex | renumber | migrate`.
 
 Full flag and example spec: `references/cli-reference.md`.
 
@@ -45,7 +45,7 @@ Read from project `CLAUDE.md` under a `/managing-tasks` block:
 
 - Tasks directory — default `.tasks/`. Override rare; not currently wired.
 - Archive policy — manual only (no auto-archive). Users run `task archive --older-than <days>` or `task archive --id <id>` explicitly.
-- TDD subtask kinds — freeform `kind:` label on subtasks (e.g., `RED`, `GREEN`). Tracker does not enforce.
+- TDD subtask kinds - freeform `kind:` label on subtasks (e.g., `RED`, `GREEN`). Tracker does not enforce.
 - Task kinds — freeform `kind:` label on the whole task (e.g., `coding`, `testing`, `docs`, `infra`). A **task-kinds table** in the project's `CLAUDE.md` maps each value to the skill to invoke and the antipatterns doc to load before working that task. Tracker stores the label but does not enforce it or read the table — the table is consumed by the agent (see "Proactive context loading" below). Recommended table shape:
 
   ```
@@ -59,7 +59,10 @@ Read from project `CLAUDE.md` under a `/managing-tasks` block:
 
   Values are the project's own vocabulary — pick whatever kinds the project actually has. A task with no `kind`, or a `kind` absent from the table, just loads nothing extra.
 
+- Task context - `context[]` on a task lists what to read or activate *beyond* whatever the task's `kind` resolves to. `kind` carries the layer default, edited in one place; `context[]` carries this task's delta. An entry identical on every task of a layer belongs in the task-kinds table, not on the task. Nothing enforces that split; it is a review concern.
+
 No config file is required; the CLI works with defaults.
+
 
 ## Proactive context loading
 
@@ -110,7 +113,7 @@ Full per-command schemas: `references/integration-contract.md`.
 
 ## File format
 
-Every task file: `schema: 1` at top; `uid` (ULID, immutable), `id` (human-readable string), `title`, `status` required. Optional: `kind`, `depends_on`, `depends_on_uids`, `goal`, `files[]`, `tests[]`, `notes[]`, `subtasks[]`, `sources[]`. `kind` is a freeform skill-domain label (e.g. `coding`, `testing`) that drives proactive context loading — see "Task kinds" under Project configuration. Filename prefix sets display order; ULID is identity. Full shape and rules: `references/file-format.md`.
+Every task file: `schema: 1` at top; `uid` (ULID, immutable), `id` (human-readable string), `title`, `status` required. Optional: `kind`, `depends_on`, `depends_on_uids`, `goal`, `files[]`, `tests[]`, `notes[]`, `subtasks[]`, `sources[]`, `context[]`. `kind` is a freeform skill-domain label (e.g. `coding`, `testing`) that drives proactive context loading - see "Task kinds" under Project configuration. Filename prefix sets display order; ULID is identity. Full shape and rules: `references/file-format.md`.
 
 ## Invariants
 

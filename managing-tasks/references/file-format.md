@@ -51,7 +51,7 @@ sources:
 | `id` | yes | string | Human-readable. May change on `renumber` or merge-conflict. **Always quote** — bare `7` would parse fine but bare `2.1` parses as float. |
 | `title` | yes | string | Imperative one-liner. |
 | `status` | yes | string | One of `pending`, `in-progress`, `done`, `blocked`, `cancelled`. |
-| `kind` | no | string | Freeform skill-domain label for the whole task (e.g. `coding`, `testing`, `docs`, `infra`). Not enforced, no enum. The consuming project's `CLAUDE.md` maps each value to a skill + antipatterns doc to load before working the task. Distinct from `subtasks[].kind`, which labels TDD phase (RED/GREEN), not domain. |
+| `kind` | no | string | Freeform skill-domain label for the whole task (e.g. `coding`, `testing`, `docs`, `infra`). Not enforced, no enum. The consuming project's `CLAUDE.md` maps each value to a skill + antipatterns doc to load before working the task. `kind` carries the *layer default* bundle; anything this one task needs beyond that default goes in `context[]`. Distinct from `subtasks[].kind`, which labels TDD phase (RED/GREEN), not domain. |
 | `depends_on` | no | string[] | IDs only. Resolved via `uid` on merge. |
 | `depends_on_uids` | no | string[] | Mirror of `depends_on` via ULID. Maintained automatically on write; canonical during merge-conflict resolution. |
 | `goal` | no | string | Block scalar (`|`) for multi-line prose. |
@@ -60,6 +60,7 @@ sources:
 | `notes` | no | string[] | Append-only in practice (no `rm-note`). |
 | `subtasks` | no | object[] | See below. |
 | `sources` | no | object[] | See below. |
+| `context` | no | object[] | What to read or activate before working this task, *in addition to* whatever `kind` resolves to. See below. |
 
 ### `files[]`
 
@@ -100,6 +101,23 @@ sources:
 ```
 
 `ref` is **not parsed**. It's a human pointer. Drift between ref and source file is user-managed.
+
+### `context[]`
+
+What an executor reads or activates before working this task. Append-ordered. CLI-addressable via `add-context` / `rm-context`. Shape deliberately mirrors `sources[]`.
+
+```yaml
+context:
+  - kind: file | skill | doc (required)
+    ref: string (required - human pointer, e.g. a path or a skill name)
+    why: string (optional - one clause, so a reader can decide whether it is worth the read)
+```
+
+`kind` is required but not an enum: unrecognised values validate, so new kinds stay additive without a schema bump. Nothing checks the value, so a typo (`files`, `skills`) is a silent documentation defect - it is worth a glance at review time.
+
+`ref` is **not parsed** here either, and nothing existence-checks it. Note that a stale `context[]` ref costs more than a stale `sources[]` ref: the executor proceeds without instructions it was meant to read, rather than merely losing traceability. Keeping refs current is user-managed, same as `sources[]`.
+
+**Division of labour with the task-level `kind`.** `kind` names the layer and resolves the project's default bundle, edited in one place. `context[]` names only what *this* task needs beyond that default. An entry that would be identical on every task of the same layer belongs in the project's `kind` table, not here. Nothing machine-checkable enforces this split; it is a review concern.
 
 ## Identity rules
 

@@ -62,7 +62,25 @@ export function validateTaskFile(obj, { filename = "<task>" } = {}) {
       if (typeof s.ref !== "string") throw new ValidationError(`${filename}: sources[].ref required string`);
     }
   }
+  validateContext(obj.context, filename);
   return obj;
+}
+
+/**
+ * Validate a context[] list: array of {kind, ref, why?} with kind/ref required strings.
+ * Conventional kinds are 'file', 'skill' and 'doc', but any string is accepted so new
+ * kinds stay additive without a schema bump.
+ * @throws {ValidationError} exit 3
+ */
+export function validateContext(context, label = "<task>") {
+  if (context == null) return;
+  if (!Array.isArray(context)) throw new ValidationError(`${label}: context must be array`);
+  for (const c of context) {
+    if (!c || typeof c !== "object" || Array.isArray(c)) throw new ValidationError(`${label}: context[] entry not a mapping`);
+    if (typeof c.kind !== "string" || !c.kind) throw new ValidationError(`${label}: context[].kind required string`);
+    if (typeof c.ref !== "string" || !c.ref) throw new ValidationError(`${label}: context[].ref required string`);
+    if (c.why != null && typeof c.why !== "string") throw new ValidationError(`${label}: context[].why must be string`);
+  }
 }
 
 /**
@@ -100,6 +118,7 @@ export function validateBatch(batch) {
         }
       }
     }
+    validateContext(t.context, `batch task ${i}`);
   }
   detectLabelCycles(batch.tasks);
   return batch;

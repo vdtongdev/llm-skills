@@ -81,6 +81,12 @@ tasks:
     sources:
       - kind: prd
         ref: context/prd-dashboard.md#implementation-details-backend
+    context:                     # optional; what to read BEYOND the kind default
+      - kind: file
+        ref: backend/services/currency.py
+        why: the rounding rule this endpoint must reuse
+      - kind: skill
+        ref: testing-code
   - label: ep2
     title: Wire dashboard consumer
     depends_on_labels: [ep1]
@@ -94,6 +100,7 @@ Rules:
 - Label uniqueness enforced within batch; duplicate → exit 3.
 - Label cycles detected → exit 4.
 - `depends_on` entries must reference existing non-cancelled tasks → exit 2 / exit 4.
+- `context[]` entries need `kind` and `ref` as strings; `why` optional → exit 3. Unrecognised `kind` values pass the schema.
 
 Atomicity: any failure during write rolls back all written files. Zero tasks created on any validation error.
 
@@ -109,6 +116,7 @@ Atomicity: any failure during write rolls back all written files. Zero tasks cre
 
 Per-task quality gates enforced by `/planning-tasks` before submit:
 - `title`, `goal`, ≥1 `files[]` entry, ≥1 `tests[]` or `notes[]` entry, ≥1 `sources[]` entry.
+- `context[]` - only entries this task needs *beyond* what its `kind` already resolves to. Copying the layer default in duplicates it in two places, where it then goes stale in one.
 - `kind` — optional but encouraged; set it to the task's skill-domain (e.g. `coding`, `testing`, `docs`) when the project's `CLAUDE.md` defines a task-kinds table, so the executing agent auto-loads the right skill/antipatterns.
 - Split tasks >3 files AND >5 changes bullets.
 - Separate tasks per subsystem (backend/frontend/tests/infra).
