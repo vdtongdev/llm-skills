@@ -169,7 +169,7 @@ Sibling file: `context/prd-<feature>-decisions.md`. One entry per settled decisi
 
 **If the user opts out of task creation, or `.tasks/` is absent and the user does not want `/managing-tasks` enabled:** The PRD with its file list and test plan is the deliverable. Skip the rest of this section.
 
-Otherwise, build a batch-import YAML from the PRD's Implementation Details section and submit it via `task import`.
+Otherwise, write one task file per task into `.tasks/` from the PRD's Implementation Details section, then run `task verify`.
 
 **Per-task quality gates (enforce before submit):**
 
@@ -207,7 +207,7 @@ When breaking down tasks, take the project's testing conventions into account. T
 
 Silence is not option (c). A production-code task with no subtasks, no `tests[]` and no stated deviation fails the gate and is not submitted.
 
-**If the project declares no testing convention, ask the user once** before generating the batch, and offer to write the answer into the project's `CLAUDE.md`. Do not silently default in either direction.
+**If the project declares no testing convention, ask the user once** before writing the task files, and offer to write the answer into the project's `CLAUDE.md`. Do not silently default in either direction.
 
 **Granularity rules:**
 
@@ -222,11 +222,15 @@ Silence is not option (c). A production-code task with no subtasks, no `tests[]`
 - Under `tests-after`, a separate test task may depend on the production task. Never under `tdd` - a test task depending on production code is test-after by construction.
 - No implicit "last-added-depends-on-previous" chain. Every dep is explicit and reason-backed.
 
-**Batch file format & submission:**
+**Task file format & submission:**
 
-Write to `.tasks/.import-<feature-slug>.yaml`. Full schema and example: `references/managing-tasks-integration.md`.
+Write one `.tasks/NNN-<slug>.yaml` file per task, directly. Full schema, envelope formats and the allocation rules for `id`, `NNN` and `uid`: `~/.claude/skills/managing-tasks/references/integration-contract.md` - that file is the contract and is authoritative. `references/managing-tasks-integration.md` carries only this skill's per-task quality checklist.
 
-Present the batch to the user for review - show the computed dep graph, plus a TDD compliance summary so a cheap exemption is conspicuous rather than buried. Derive it by counting the batch you just wrote:
+Get real `uid` values from the CLI, never invented: `task get-new-uid --count <n>` returns `n` ULIDs. A hand-written `uid` breaks the merge procedure in `~/.claude/skills/managing-tasks/references/file-format.md`, which resolves duplicate-id conflicts by ULID timestamp order.
+
+Resolve `depends_on` to real task ids as you write. There are no labels and no `label_map` - a dep is the id of a task that already exists or that this run is creating.
+
+Present the written tasks to the user for review - show the computed dep graph, plus a TDD compliance summary so a cheap exemption is conspicuous rather than buried. Derive it by counting the tasks you just wrote:
 
 ```
 Production-code tasks: 14
@@ -238,16 +242,18 @@ Production-code tasks: 14
 
 A task in none of those three buckets is a gate failure, not a fourth bucket. Fix it before presenting.
 
-User may edit the file before submitting.
+User may edit the files before you verify.
 
-Submit with: `task import .tasks/.import-<feature-slug>.yaml`. Consume the returned `label_map` for any downstream references. Delete the batch file on success.
+**Planning is not done until `task verify` exits 0.** Run it after writing the files:
 
-On failure, the CLI creates zero tasks (atomic rollback). Read the stderr message, fix the batch, resubmit.
+- Exit 0: planning done.
+- Exit 4: the repo has problems. The output lists them by `kind` - `invalid` (a file violates the schema), `dangling-dep` (a `depends_on` names no task), `cycle` (the dep graph loops). Fix the files and re-run.
 
-Example TDD subtask split inside the batch:
+Writing files directly is not atomic: a run that fails partway leaves the tasks it already wrote. `verify` reports the resulting state, so fix forward from what it says rather than assuming a clean rollback. Per-exit-code handling is in the contract's § Producer-side patterns.
+
+Example TDD subtask split inside a task file:
 
 ```yaml
-- label: rule-post-endpoint
   title: Add POST /rules endpoint
   goal: Expose rule creation to clients.
   files:

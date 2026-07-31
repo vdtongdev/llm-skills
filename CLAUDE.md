@@ -24,7 +24,7 @@
 **DON'T**: Don't reinvent the wheel if a solution already exists.
 
 **DO**: Think about and point out a better approach than what the user is asking, if applicable. Explain pros and cons in a few bullets. If the current request is still reasonable, proceed, unless the alternative avoids serious risk or wasted work.
-**DON'T**: Don't use claude's built-in memory file. I have specific skills designed to manage out-of-session memory (/preserving-session-memory), so claude's is inferior and duplicate
+**DON'T**: Don't use claude's built-in memory file. I have specific skills designed to manage out-of-session memory (/journaling-session-memory), so claude's is inferior and duplicate
 
 **DO**: Spawn a code review agent - or better, an adversarial code review agent - before finalizing work.
 **DON'T**: Don't forget antipatterns, if the project provides them.
