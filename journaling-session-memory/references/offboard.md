@@ -21,7 +21,7 @@ If no session file was created at onboard (skill invoked late), create it now fr
    - **Failed Approaches:** tracker projects - confirm each failure got a `task add-note` (add missing ones now) and leave the section out. No tracker - full entries here: what, what broke, WHY (root cause)
    - **Open Questions (session-scoped):** what needs user input for this work
    - **Uncommitted Changes:** "All committed" / "Stashed as: session: <desc>" / describe the dirty state and why
-   - **Docs That Will Need Reading:** docs and skills the next agent must load before touching code. If the task has a `kind` (see /managing-tasks), derive from the project's CLAUDE.md task-kinds table
+   - **Docs That Will Need Reading:** docs and skills the next agent must load before touching code. In a tracker project (see /managing-tasks), the task already answers this: copy its `context[]` entries, and derive the rest from its `kind` via the project's CLAUDE.md task-kinds table. Add here only what neither field covers - if you find yourself adding much, the task's `context[]` is the better home for it
    - **Docs That May Need Updating:** only docs you know went stale from this session's changes. Don't guess
    - **Retrieval Hints:** grep-able terms/paths/task-ids for when future work circles back here. Omit if nothing non-obvious
 3. **Frontmatter:** set `finalized: true`, `head:` to the current short hash (`git rev-parse --short HEAD`), and verify `branch:`, `tasks:`, `topics:` are current.
