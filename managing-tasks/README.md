@@ -6,7 +6,7 @@ A project-local task tracker for Claude Code projects. Tasks are plain YAML file
 
 **You** — run `task` commands directly to create, inspect, and update tasks.
 
-**Claude Code skills** — `/planning-tasks` generates task batches after feature planning; `/reviewing-code` can log follow-up findings as tasks; `/preserving-session-memory` reads task state during session handoff. Claude acts on your behalf but does not run autonomously; you review tasks before any work begins.
+**Claude Code skills** — `/planning-tasks` writes task files after feature planning; `/reviewing-code` can log follow-up findings as tasks; `/journaling-session-memory` reads task state during session handoff. Claude acts on your behalf but does not run autonomously; you review tasks before any work begins.
 
 **The files** — every task is a plain YAML file. You can open them in any editor, commit them, and diff them like any source file. Use the CLI for creating, renaming, and changing state; edit by hand only for fields the CLI does not expose, and keep required fields intact (`schema`, `uid`, `id`, `title`, `status`).
 
@@ -15,7 +15,7 @@ A project-local task tracker for Claude Code projects. Tasks are plain YAML file
 ## Before you start
 
 - Node.js is required (v18+)
-- The CLI lives at `~/.claude/skills/managing-tasks/bin/task` — it is machine-wide, not project-scoped
+- The CLI lives at `<skills-dir>/managing-tasks/bin/task` — it is machine-wide, not project-scoped. The skills dir is `~/.claude/skills` for Claude Code, `~/.codex/skills` for codex; examples below use the Claude Code path
 - `.tasks/` is project-scoped — each repo gets its own task list
 - Install dependencies once, per machine:
 
@@ -95,7 +95,21 @@ sources:
 | Stable across renumber | ✗ | ✗ | ✓ |
 | Use for | CLI commands | Display order | Merges, cross-branch refs |
 
-> **Warning:** numeric IDs and filename prefixes can change after `task renumber` or batch import. Use task titles or ULIDs when you need stable references in commit messages or notes.
+> **Warning:** numeric IDs and filename prefixes can change after `task renumber` or a merge-conflict resolution. Use task titles or ULIDs when you need stable references in commit messages or notes.
+
+### `kind` and `context[]`
+
+Two optional fields tell whoever works a task what to load before starting:
+
+- **`kind`** — a freeform label for the task's domain (`coding`, `testing`, `docs`, `infra`). Your project's `CLAUDE.md` maps each value to the skills and antipattern docs to load. It is the *per-layer default*, edited in one place.
+- **`context[]`** — what *this one task* needs beyond that default: a file to read, a skill to invoke, a doc to check.
+
+```bash
+task new "Add avatar upload" --context 'kind=file,ref=backend/services/storage.py'
+task add-context 4 --kind skill --ref testing-code --why "project TDD policy"
+```
+
+An entry that would be identical on every task of the same layer belongs in the `kind` table, not in `context[]`.
 
 ### Task lifecycle
 
@@ -185,18 +199,19 @@ task set-status 6 done
 
 ### Session handoff
 
-When you end a session with Claude, `/preserving-session-memory` reads `task list` to populate the session state document. When you resume, it reads `task list --ready` to surface what to pick up next. You do not need to run any task commands for this — Claude handles it automatically.
+When you end a session with Claude, `/journaling-session-memory` reads `task list` to populate the session journal. When you resume, it reads `task list --ready` to surface what to pick up next. You do not need to run any task commands for this — Claude handles it automatically.
 
-### Importing a planned batch
+### Reviewing a planned set of tasks
 
-After `/planning-tasks` finishes, it produces a batch file at `.tasks/.import-<feature>.yaml` and submits it with `task import`. You can review the file before it is submitted and edit it. If the import succeeds, all tasks are created atomically — if any task is invalid, none are created.
-
-If Claude has already submitted the import, you can inspect created tasks immediately:
+`/planning-tasks` writes one `.tasks/NNN-<slug>.yaml` file per task directly, then runs `task verify` to check the result. Writing is **not atomic**: a run that fails partway leaves the files it already wrote, so review what landed rather than assuming all-or-nothing.
 
 ```bash
+task verify    # dangling deps, cycles, duplicate ids, invalid files
 task list
 task deps 7    # see dependencies for task 7
 ```
+
+`task verify` exits 0 when clean and 4 when it finds problems. It reports, it does not repair — fix the files it names and re-run.
 
 ---
 
@@ -204,9 +219,9 @@ task deps 7    # see dependencies for task 7
 
 | Skill | What it does with tasks |
 |-------|------------------------|
-| `/planning-tasks` | Generates a batch of tasks after feature planning; submits via `task import` |
+| `/planning-tasks` | Writes task files directly after feature planning; gates on `task verify` |
 | `/reviewing-code` | May create follow-up tasks from review findings via `task new` |
-| `/preserving-session-memory` | Reads task state on session start/end; does not create tasks |
+| `/journaling-session-memory` | Reads task state on session start/end; does not create tasks |
 
 Each skill's own `SKILL.md` documents the exact commands it uses and when.
 
@@ -231,14 +246,15 @@ task grep "keyword"    # search across all fields
 
 ### Task numbers changed unexpectedly
 
-Numeric IDs and filename prefixes change after `task renumber` or a batch import. This is expected — use `task grep` or ULID to find a task by content if you lost track of its number.
+Numeric IDs and filename prefixes change after `task renumber`, `task move`, or a merge-conflict resolution. This is expected — use `task grep` or ULID to find a task by content if you lost track of its number.
 
 ### Merge conflict in `.tasks/`
 
-YAML task files can conflict if two branches create tasks with the same filename prefix. Resolve by keeping both files (rename one's prefix if needed), then run `task reindex` to rebuild the cache:
+YAML task files can conflict if two branches create tasks with the same filename prefix or the same numeric `id`. Resolve by keeping both files, renaming one's prefix and renumbering one's `id` — keep the id of whichever task has the earlier ULID `uid`, and rewrite any dependent's `depends_on` to match. Then:
 ```bash
-task reindex
-task list    # verify both tasks appear correctly
+task reindex   # rebuild the cache
+task verify    # catch duplicate ids and deps left pointing at the old number
+task list
 ```
 
 ### Lock appears stuck

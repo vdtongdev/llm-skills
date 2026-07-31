@@ -10,7 +10,8 @@ import { join } from "node:path";
 import YAML from "yaml";
 
 import { main } from "../lib/cli.mjs";
-import { validateTaskFile, validateBatch } from "../lib/schema.mjs";
+import { validateTaskFile } from "../lib/schema.mjs";
+import { seed } from "./helpers.mjs";
 
 async function scratch() {
   return mkdtemp(join(tmpdir(), "mt-context-"));
@@ -73,13 +74,6 @@ test("schema: unrecognised context kind is accepted (new kinds stay additive)", 
   validateTaskFile({ ...TASK, context: [{ kind: "files", ref: "a" }] });
 });
 
-test("schema: batch with a bad context entry rejected before any write", () => {
-  assert.throws(
-    () => validateBatch({ schema: 1, tasks: [{ title: "t", context: [{ kind: "file" }] }] }),
-    /batch task 0: context\[\].ref required/,
-  );
-});
-
 // The additive claim in the PRD's Key Assumptions rests on the validator never enumerating
 // the key set, and on the mutation round-trip preserving whatever it does not know about.
 // Post-change there is no old validator to run, so these assert the property itself.
@@ -108,36 +102,36 @@ test("compat: mutation round-trip preserves unknown top-level keys", async () =>
   }
 });
 
-test("compat: import drops unknown top-level keys (the known gap, asserted not desired)", async () => {
+// Was "compat: import drops unknown top-level keys". That gap belonged to import's
+// task-rebuilding step; a directly-written file keeps whatever the writer put in it.
+// What still matters is that an unknown key does not make the file unreadable.
+test("compat: an unknown top-level key does not invalidate a task file", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [{ title: "t1", some_future_field: [{ a: 1 }] }],
-    }));
-    const r = await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "t1", some_future_field: [{ a: 1 }] }]);
+    const r = await runCLI(dir, "show", "1");
     assert.equal(r.code, 0);
-    const files = (await readdir(join(dir, ".tasks"))).filter((f) => f.endsWith(".yaml"));
-    const parsed = YAML.parse(await readFile(join(dir, ".tasks", files[0]), "utf8"));
-    assert.equal(parsed.some_future_field, undefined);
+    assert.match(r.out, /t1/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 });
 
-test("schema: batch with a bad context entry writes zero files", async () => {
+// Was "schema: batch with a bad context entry writes zero files" - import's atomic
+// rollback. Direct writes are not atomic, so the property that replaces it is that
+// `task verify` reports the bad file rather than the repo silently accepting it.
+test("schema: verify reports a task whose context entry is missing ref", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [{ title: "ok" }, { title: "bad", context: [{ kind: "file" }] }],
-    }));
-    const r = await runCLI(dir, "import", "b.yaml");
-    assert.equal(r.code, 3);
-    const files = (await readdir(join(dir, ".tasks"))).filter((f) => f.endsWith(".yaml"));
-    assert.equal(files.length, 0);
+    await seed(dir, [{ title: "ok" }, { title: "bad", context: [{ kind: "file" }] }]);
+    const r = await runCLI(dir, "verify");
+    assert.equal(r.code, 4);
+    const problems = YAML.parse(r.out).problems;
+    assert.equal(problems.length, 1);
+    assert.equal(problems[0].kind, "invalid");
+    assert.match(problems[0].detail, /context\[\]\.ref/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -203,15 +197,11 @@ test("cli: task new --context, repeated, and show omits the block when absent", 
   }
 });
 
-test("cli: import carries context[] through to disk", async () => {
+test("cli: context[] written to disk survives to show", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [{ title: "t1", context: [{ kind: "file", ref: "a/b.py", why: "seam" }] }],
-    }));
-    assert.equal((await runCLI(dir, "import", "b.yaml")).code, 0);
+    await seed(dir, [{ title: "t1", context: [{ kind: "file", ref: "a/b.py", why: "seam" }] }]);
     const show = await runCLI(dir, "show", "1");
     assert.match(show.out, /a\/b\.py/);
     assert.match(show.out, /why: seam/);

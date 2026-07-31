@@ -123,7 +123,8 @@ context:
 
 - `uid` is the ground truth of identity.
 - `id` is convenient for humans and CLI invocation.
-- On merge conflict (two branches create tasks with identical `id` but different `uid`): keep the earlier-created one's `id`; renumber the later one; rewrite every dependent's `depends_on` from `depends_on_uids`.
+- `id` is unique repo-wide, across `.tasks/` **and** `.tasks/archived/`. Two files claiming one id makes every `depends_on` on it ambiguous; `task verify` reports it as `duplicate-id`.
+- On merge conflict (two branches create tasks with identical `id` but different `uid`): keep the earlier-created one's `id` (ULID timestamp order); renumber the later one; rewrite every dependent's `depends_on` from `depends_on_uids`.
 - Filename prefix sets display order, not identity. Renames do not affect `uid` or `id`.
 
 ## Filename rules
@@ -131,6 +132,18 @@ context:
 - Top-level tasks: `<prefix>-<slug>.yaml`. Prefix is three digits (e.g., `010`, `020`). Slug is lowercase ASCII, hyphen-separated, ≤60 chars.
 - Archived tasks: identical filename under `.tasks/archive/`.
 - Prefix gap: 10 between consecutive new tasks. `task move` uses gap-fill; exhausted gaps → `task renumber`.
+
+## Allocating a new file's identity
+
+`task new` allocates all three. A writer creating files directly owes them itself:
+
+| Value | Rule |
+|---|---|
+| `id` | max existing numeric id across `.tasks/` and `.tasks/archived/`, plus 1. |
+| `NNN` prefix | max existing prefix plus 10, zero-padded to 3 digits. Do not pack tightly — the gap is what `task move` consumes. |
+| `uid` | from `task get-new-uid --count <n>`. **Never hand-written**: merge-conflict resolution above orders by ULID timestamp, so an invented uid resolves conflicts wrongly and silently. |
+
+Run `task verify` after writing files directly. It is a report, not a repair, and direct writes are not atomic — fix forward from what it names. The producer-side workflow around this (batching, retry, which skill does it when) is `references/integration-contract.md` § Writing task files directly.
 
 ## Invalid files
 
@@ -144,4 +157,6 @@ If a file fails to parse or validate:
 
 Safe to hand-edit. Tracker revalidates on every write; a broken file will be caught the next time `list` is run.
 
-After hand-editing multiple files, run `task reindex` to refresh `.tasks/.cache/index.yaml`.
+**Exception: `depends_on` and `depends_on_uids` must be edited together.** Nothing recomputes the mirror from a hand edit, and merge-conflict resolution rewrites `depends_on` *from* `depends_on_uids` (§ Identity rules) — so a hand-edited `depends_on` with a stale mirror is silently reverted at the next merge. Prefer `task add-dep` / `task rm-dep`, which maintain both. Editing them by hand means editing both, positionally aligned.
+
+After hand-editing multiple files, run `task reindex` to refresh `.tasks/.cache/index.yaml`, and `task verify` to catch dangling deps, cycles and duplicate ids.

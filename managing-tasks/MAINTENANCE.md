@@ -10,6 +10,7 @@
 | Exit code added / reclassified | `references/exit-codes.md` | Code table |
 | New invariant or decision graph update | `SKILL.md` | Invariants / Decision graph |
 | Cross-cutting workflow lesson | `SKILL.md` | Relevant section |
+| Human-facing setup, walkthrough, troubleshooting | `README.md` | Relevant section |
 | Recurring topic large enough to split | new `references/<topic>.md` | add row here |
 
 ## Classification Rules
@@ -17,6 +18,7 @@
 - **CLI reference vs integration contract**: CLI reference documents what humans/agents type; integration contract documents the YAML shape producers parse. A new `--flag` goes to CLI reference. A changed output field goes to integration contract.
 - **Invariant vs rule of thumb**: Invariants are machine-enforced (validated in `schema.mjs` or command guards). Rules of thumb (e.g., "prefer small tasks") are workflow guidance and live in `/planning-tasks`, not here.
 - **SKILL.md vs reference**: SKILL.md is the activation surface (≤200 lines). Anything that grows past a paragraph belongs in a reference.
+- **README vs everything else**: README is for a human setting the tracker up or getting unstuck. It may repeat a command an agent doc also carries, but never a shape or contract — those drift. Point at the reference instead.
 
 ## Contract Version Rules
 
@@ -33,6 +35,7 @@
 | `references/file-format.md` | 250 |
 | `references/integration-contract.md` | 250 |
 | `references/exit-codes.md` | 150 |
+| `README.md` | 350 |
 | `MAINTENANCE.md` | 100 |
 
 Over threshold → split by topic, add new row to routing table.

@@ -6,6 +6,13 @@ export const STATUSES = new Set(["pending", "in-progress", "done", "blocked", "c
 export const FILE_KINDS = new Set(["create", "modify", "delete"]);
 export const TERMINAL = new Set(["done", "cancelled"]);
 
+/**
+ * Symbol key for an exit code on a SUCCESSFUL command result - the command ran fine
+ * but its verdict is non-zero (`task verify`). A symbol so it never appears in the
+ * YAML on stdout, which is the machine contract (see references/exit-codes.md).
+ */
+export const EXIT = Symbol.for("managing-tasks.exit");
+
 /** Carries an exitCode (2 = not-found, 3 = bad input, 4 = domain violation, 6 = schema too new) for process.exit. */
 export class ValidationError extends Error {
   constructor(message, exitCode = 3) {
@@ -80,84 +87,6 @@ export function validateContext(context, label = "<task>") {
     if (typeof c.kind !== "string" || !c.kind) throw new ValidationError(`${label}: context[].kind required string`);
     if (typeof c.ref !== "string" || !c.ref) throw new ValidationError(`${label}: context[].ref required string`);
     if (c.why != null && typeof c.why !== "string") throw new ValidationError(`${label}: context[].why must be string`);
-  }
-}
-
-/**
- * Validate a batch import YAML object (schema v1, tasks array with optional labels).
- * Detects intra-batch label cycles before any files are written.
- * @throws {ValidationError}
- */
-export function validateBatch(batch) {
-  if (!batch || batch.schema !== SCHEMA_VERSION) throw new ValidationError(`batch: schema must be ${SCHEMA_VERSION}`);
-  if (!Array.isArray(batch.tasks)) throw new ValidationError("batch: tasks must be array");
-  const labels = new Set();
-  for (const [i, t] of batch.tasks.entries()) {
-    if (typeof t.title !== "string" || !t.title) throw new ValidationError(`batch task ${i}: title required`);
-    if (t.label) {
-      if (labels.has(t.label)) throw new ValidationError(`batch: duplicate label ${t.label}`);
-      labels.add(t.label);
-    }
-    if (t.depends_on_labels != null) {
-      if (!Array.isArray(t.depends_on_labels)) throw new ValidationError(`batch task ${i}: depends_on_labels must be array`);
-      for (const l of t.depends_on_labels) {
-        if (typeof l !== "string") throw new ValidationError(`batch task ${i}: depends_on_labels entries must be strings`);
-      }
-    }
-    if (t.depends_on != null) {
-      if (!Array.isArray(t.depends_on)) throw new ValidationError(`batch task ${i}: depends_on must be array`);
-      for (const d of t.depends_on) {
-        if (typeof d !== "string") throw new ValidationError(`batch task ${i}: depends_on entries must be strings (quote numeric ids)`);
-      }
-    }
-    if (t.sources != null) {
-      if (!Array.isArray(t.sources)) throw new ValidationError(`batch task ${i}: sources must be array`);
-      for (const s of t.sources) {
-        if (typeof s.kind !== "string" || typeof s.ref !== "string") {
-          throw new ValidationError(`batch task ${i}: sources entries need kind+ref`);
-        }
-      }
-    }
-    validateContext(t.context, `batch task ${i}`);
-  }
-  detectLabelCycles(batch.tasks);
-  return batch;
-}
-
-/**
- * Iterative DFS cycle detection on the label→depends_on_labels graph.
- * @throws {ValidationError} exit 4 listing the cycle path
- */
-function detectLabelCycles(tasks) {
-  const graph = new Map();
-  for (const t of tasks) graph.set(t.label, t.depends_on_labels || []);
-  const WHITE = 0, GRAY = 1, BLACK = 2;
-  const color = new Map([...graph.keys()].map((k) => [k, WHITE]));
-  for (const start of graph.keys()) {
-    if (color.get(start) !== WHITE) continue;
-    const path = [start];
-    const stack = [[start, [...(graph.get(start) || [])]]];
-    color.set(start, GRAY);
-    while (stack.length) {
-      const frame = stack[stack.length - 1];
-      const neighbors = frame[1];
-      if (!neighbors.length) {
-        color.set(frame[0], BLACK);
-        stack.pop();
-        path.pop();
-        continue;
-      }
-      const next = neighbors.shift();
-      if (!graph.has(next)) continue;
-      if (color.get(next) === GRAY) {
-        throw new ValidationError(`batch: cycle via labels: ${[...path, next].join(" → ")}`, 4);
-      }
-      if (color.get(next) === WHITE) {
-        color.set(next, GRAY);
-        path.push(next);
-        stack.push([next, [...(graph.get(next) || [])]]);
-      }
-    }
   }
 }
 

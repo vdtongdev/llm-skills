@@ -11,8 +11,9 @@ import { join } from "node:path";
 import YAML from "yaml";
 
 import { main } from "../lib/cli.mjs";
-import { validateTaskFile, validateBatch, ValidationError } from "../lib/schema.mjs";
+import { validateTaskFile, ValidationError } from "../lib/schema.mjs";
 import { atomicWrite, withLock } from "../lib/storage.mjs";
+import { seed } from "./helpers.mjs";
 
 async function scratch() {
   return mkdtemp(join(tmpdir(), "mt-test-"));
@@ -61,29 +62,6 @@ test("schema: optional kind must be string", () => {
     () => validateTaskFile({ schema: 1, uid: "U", id: "1", title: "t", status: "pending", kind: 3 }),
     /kind must be string/,
   );
-});
-
-test("schema: batch label collision rejected", () => {
-  assert.throws(() => validateBatch({
-    schema: 1,
-    tasks: [{ label: "a", title: "t1" }, { label: "a", title: "t2" }],
-  }), /duplicate label/);
-});
-
-test("schema: batch cycle via labels rejected", () => {
-  try {
-    validateBatch({
-      schema: 1,
-      tasks: [
-        { label: "a", title: "t1", depends_on_labels: ["b"] },
-        { label: "b", title: "t2", depends_on_labels: ["a"] },
-      ],
-    });
-    assert.fail("expected cycle error");
-  } catch (err) {
-    assert.equal(err.exitCode, 4);
-    assert.match(err.message, /cycle/);
-  }
 });
 
 test("storage: atomic write produces final file, no tmp leftover", async () => {
@@ -136,20 +114,14 @@ test("cli: init idempotent; gitignore entry added once", async () => {
   }
 });
 
-test("cli: import + list + show happy path", async () => {
+test("cli: list + show happy path", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "batch.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [
-        { label: "a", title: "first", goal: "do it", files: [{ path: "x.ts", kind: "create" }] },
-        { label: "b", title: "second", depends_on_labels: ["a"] },
-      ],
-    }));
-    const r = await runCLI(dir, "import", "batch.yaml");
-    assert.equal(r.code, 0);
-    assert.match(r.out, /label_map/);
+    await seed(dir, [
+      { title: "first", goal: "do it", files: [{ path: "x.ts", kind: "create" }] },
+      { title: "second", depends_on: ["1"] },
+    ]);
 
     const list = await runCLI(dir, "list", "--compact");
     assert.match(list.out, /\[1\] PENDING {2}first/);
@@ -163,7 +135,7 @@ test("cli: import + list + show happy path", async () => {
   }
 });
 
-test("cli: kind round-trips through new, show, edit, and import", async () => {
+test("cli: kind round-trips through new, show, edit, and a written file", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
@@ -179,12 +151,8 @@ test("cli: kind round-trips through new, show, edit, and import", async () => {
     show = await runCLI(dir, "show", "1");
     assert.match(show.out, /kind: docs/);
 
-    // import carries per-task kind through to disk
-    await writeFile(join(dir, "batch.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [{ title: "imported", kind: "testing" }],
-    }));
-    await runCLI(dir, "import", "batch.yaml");
+    // a directly-written kind reads back through show
+    await seed(dir, [{ id: "2", prefix: 20, title: "written", kind: "testing" }]);
     show = await runCLI(dir, "show", "2");
     assert.match(show.out, /kind: testing/);
 
@@ -214,14 +182,10 @@ test("cli: set-status done refused when subtasks open", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [{
-        label: "a", title: "t",
-        subtasks: [{ id: "1.1", status: "pending", title: "open" }],
-      }],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{
+      title: "t",
+      subtasks: [{ id: "1.1", status: "pending", title: "open" }],
+    }]);
     const r = await runCLI(dir, "set-status", "1", "done");
     assert.equal(r.code, 4);
     assert.match(r.out, /open subtasks/);
@@ -234,11 +198,7 @@ test("cli: set-status done refused when dep not done", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [{ label: "a", title: "t1" }, { label: "b", title: "t2", depends_on_labels: ["a"] }],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "t1" }, { title: "t2", depends_on: ["1"] }]);
     const r = await runCLI(dir, "set-status", "2", "done");
     assert.equal(r.code, 4);
     assert.match(r.out, /dep 1 not done/);
@@ -251,14 +211,7 @@ test("cli: add-dep cycle rejected", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [
-        { label: "a", title: "t1" },
-        { label: "b", title: "t2", depends_on_labels: ["a"] },
-      ],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "t1" }, { title: "t2", depends_on: ["1"] }]);
     const r = await runCLI(dir, "add-dep", "1", "2");
     assert.equal(r.code, 4);
     assert.match(r.out, /cycle/);
@@ -271,14 +224,7 @@ test("cli: cancel with active dependents refused without --force", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [
-        { label: "a", title: "t1" },
-        { label: "b", title: "t2", depends_on_labels: ["a"] },
-      ],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "t1" }, { title: "t2", depends_on: ["1"] }]);
     const r = await runCLI(dir, "cancel", "1");
     assert.equal(r.code, 4);
     assert.match(r.out, /active dependents/);
@@ -291,14 +237,7 @@ test("cli: list --ready surfaces only deps-satisfied pendings", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [
-        { label: "a", title: "t1" },
-        { label: "b", title: "t2", depends_on_labels: ["a"] },
-      ],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "t1" }, { title: "t2", depends_on: ["1"] }]);
     const r = await runCLI(dir, "list", "--ready", "--compact");
     assert.match(r.out, /\[1\]/);
     assert.doesNotMatch(r.out, /\[2\]/);
@@ -311,11 +250,7 @@ test("cli: list tolerates one malformed task file", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [{ label: "a", title: "good" }],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "good" }]);
     await writeFile(join(dir, ".tasks/020-broken.yaml"), "::: not yaml :::");
     const r = await runCLI(dir, "list");
     assert.equal(r.code, 0);
@@ -330,15 +265,11 @@ test("cli: rm-dep removes correct uid when dep is not last", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [
-        { label: "a", title: "t1" },
-        { label: "b", title: "t2" },
-        { label: "c", title: "t3", depends_on_labels: ["a", "b"] },
-      ],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [
+      { title: "t1" },
+      { title: "t2" },
+      { title: "t3", depends_on: ["1", "2"] },
+    ]);
     // Remove the middle dep (task 1, "a") from task 3
     const r = await runCLI(dir, "rm-dep", "3", "1");
     assert.equal(r.code, 0);
@@ -361,14 +292,10 @@ test("cli: grep matches on title and goal", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [
-        { label: "a", title: "implement auth", goal: "oauth2 flow" },
-        { label: "b", title: "write tests", goal: "coverage" },
-      ],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [
+      { title: "implement auth", goal: "oauth2 flow" },
+      { title: "write tests", goal: "coverage" },
+    ]);
     const r = await runCLI(dir, "grep", "oauth");
     assert.equal(r.code, 0);
     assert.match(r.out, /implement auth/);
@@ -382,11 +309,7 @@ test("cli: why shows goal and sources", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [{ label: "a", title: "t1", goal: "do the thing", sources: [{ kind: "prd", ref: "spec.md#s1" }] }],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "t1", goal: "do the thing", sources: [{ kind: "prd", ref: "spec.md#s1" }] }]);
     const r = await runCLI(dir, "why", "1");
     assert.equal(r.code, 0);
     assert.match(r.out, /do the thing/);
@@ -400,8 +323,7 @@ test("cli: add-source accepts multiple --source flags", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({ schema: 1, tasks: [{ label: "a", title: "t1" }] }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "t1" }]);
     const r = await runCLI(dir, "add-source", "1", "--source", "kind=prd,ref=a.md", "--source", "kind=issue,ref=gh#1");
     assert.equal(r.code, 0);
     const show = await runCLI(dir, "show", "1");
@@ -416,8 +338,7 @@ test("cli: reopen archived task moves file back and sets pending", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({ schema: 1, tasks: [{ label: "a", title: "t1" }] }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "t1" }]);
     await runCLI(dir, "set-status", "1", "done");
     await runCLI(dir, "archive", "--id", "1");
     const r = await runCLI(dir, "reopen", "1");
@@ -443,14 +364,7 @@ test("cli: archive refuses if referenced by active", async () => {
   const dir = await scratch();
   try {
     await runCLI(dir, "init");
-    await writeFile(join(dir, "b.yaml"), YAML.stringify({
-      schema: 1,
-      tasks: [
-        { label: "a", title: "t1" },
-        { label: "b", title: "t2", depends_on_labels: ["a"] },
-      ],
-    }));
-    await runCLI(dir, "import", "b.yaml");
+    await seed(dir, [{ title: "t1" }, { title: "t2", depends_on: ["1"] }]);
     await runCLI(dir, "set-status", "1", "done");
     const r = await runCLI(dir, "archive", "--id", "1");
     assert.equal(r.code, 4);

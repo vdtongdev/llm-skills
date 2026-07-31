@@ -384,7 +384,11 @@ async function mutate(cwd, id, transform) {
 }
 
 /** Iterative DFS cycle check: returns true if start is reachable from itself via graph edges. */
-function hasCycle(graph, start) {
+/**
+ * True if `start` is reachable from itself in `graph` (Map<id, Set<id>>).
+ * Exported for `task verify`, which runs it from every node for a repo-wide check.
+ */
+export function hasCycle(graph, start) {
   const stack = [start];
   const visited = new Set();
   while (stack.length) {

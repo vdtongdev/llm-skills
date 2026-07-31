@@ -1,41 +1,37 @@
 ---
 name: managing-tasks
-description: Project-local task tracker. YAML-per-task files under `.tasks/`, CLI at `~/.claude/skills/managing-tasks/bin/task`. Use when the user invokes `task ...`, when any producer skill (`/planning-tasks`, `/reviewing-code`, `/preserving-session-memory`) emits task creation or queries task state, or when resuming/ending a session in a project that has `.tasks/`. Triggers on "create a task", "list tasks", "what's next", "task import", "mark done", "archive task".
+description: Project-local task tracker. Use when the user invokes `task ...`, when any skill emits task creation or queries task state, or when resuming/ending a session in a project that has `.tasks/`. Triggers on "create a task", "list tasks", "what's next", "mark done", "archive task".
 ---
 
 # Managing Tasks
 
-Self-owned replacement for Task Master. Tasks live as YAML files under `.tasks/<prefix>-<slug>.yaml`; mutations serialized via a project-wide file lock; ULID identity survives renumber and branch merges. Primary consumer is Claude.
+Tasks live as YAML files under `.tasks/<prefix>-<slug>.yaml`; mutations serialized via a project-wide file lock; ULID identity survives renumber and branch merges.
 
 ## When to use
 
 - User invokes `task ...` or asks about task state
-- `/planning-tasks` Step 6 emits a batch → `task import`
-- `/reviewing-code` Pass 6 emits follow-up findings → `task new`
-- `/preserving-session-memory` derives done/pending sections from `task list`
+- Any skill emits a task creation or query event
+- Resuming or ending a session in a project that has `.tasks/`
 
 ## Decision graph
 
-```dot
-digraph intent {
-  "User intent" [shape=diamond];
-  "User intent" -> "task new / task import" [label="create"];
-  "User intent" -> "task list [--ready|--status|--touching]" [label="query many"];
-  "User intent" -> "task show <id> / why <id>" [label="inspect one"];
-  "User intent" -> "task next" [label="what now"];
-  "User intent" -> "task set-status / edit / add-* / rm-*" [label="mutate"];
-  "User intent" -> "task archive / cancel / reopen / renumber" [label="lifecycle"];
-  "User intent" -> "task reindex / migrate" [label="recover / upgrade"];
-}
-```
+Frequent commands:
+
+- task new / task get-new-uid
+- task list
+- task show <id> / why <id>
+- task next
+- task set-status / edit / `add-*` / `rm-*`
+- task archive / cancel / reopen / renumber
+- task verify / reindex / migrate
 
 ## CLI entrypoint
 
-Binary: `~/.claude/skills/managing-tasks/bin/task` (Node shim). Projects alias to `task` in shells.
+Binary: `${skills_dir}/managing-tasks/bin/task` (Node shim). Projects alias to `task` in shells. (~/.claude/skills for claude, ~/.codex/skills for codex, etc.)
 
 Every command prints YAML on stdout (starts with `contract_version: 1`) or a formatted multi-line block for human-oriented commands (`list`, `show`, `deps`, `grep`, `why`, `next`). Errors go to stderr; exit code classifies the failure (see `references/exit-codes.md`).
 
-Quick reference: `init | new | import | list | show | next | deps | grep | why | set-status | edit | add-file | rm-file | add-change | add-dep | rm-dep | add-subtask | edit-subtask | add-note | add-test | add-source | rm-source | add-context | rm-context | move | rm | cancel | reopen | archive | reindex | renumber | migrate`.
+Quick reference: `init | new | get-new-uid | list | show | next | deps | grep | why | set-status | edit | add-file | rm-file | add-change | add-dep | rm-dep | add-subtask | edit-subtask | add-note | add-test | add-source | rm-source | add-context | rm-context | move | rm | cancel | reopen | archive | verify | reindex | renumber | migrate`.
 
 Full flag and example spec: `references/cli-reference.md`.
 
@@ -43,7 +39,7 @@ Full flag and example spec: `references/cli-reference.md`.
 
 Read from project `CLAUDE.md` under a `/managing-tasks` block:
 
-- Tasks directory — default `.tasks/`. Override rare; not currently wired.
+- Tasks directory — default `.tasks/`
 - Archive policy — manual only (no auto-archive). Users run `task archive --older-than <days>` or `task archive --id <id>` explicitly.
 - TDD subtask kinds - freeform `kind:` label on subtasks (e.g., `RED`, `GREEN`). Tracker does not enforce.
 - Task kinds — freeform `kind:` label on the whole task (e.g., `coding`, `testing`, `docs`, `infra`). A **task-kinds table** in the project's `CLAUDE.md` maps each value to the skill to invoke and the antipatterns doc to load before working that task. Tracker stores the label but does not enforce it or read the table — the table is consumed by the agent (see "Proactive context loading" below). Recommended table shape:
@@ -59,29 +55,30 @@ Read from project `CLAUDE.md` under a `/managing-tasks` block:
 
   Values are the project's own vocabulary — pick whatever kinds the project actually has. A task with no `kind`, or a `kind` absent from the table, just loads nothing extra.
 
-- Task context - `context[]` on a task lists what to read or activate *beyond* whatever the task's `kind` resolves to. `kind` carries the layer default, edited in one place; `context[]` carries this task's delta. An entry identical on every task of a layer belongs in the task-kinds table, not on the task. Nothing enforces that split; it is a review concern.
+- Task context - `context[]` on a task lists what to read or activate _beyond_ whatever the task's `kind` resolves to. `kind` carries the layer default, edited in one place; `context[]` carries this task's delta. An entry identical on every task of a layer belongs in the task-kinds table, not on the task. Nothing enforces that split; it is a review concern.
 
 No config file is required; the CLI works with defaults.
 
-
 ## Proactive context loading
 
-The point of task-level `kind` is to remove the per-session "which skill/docs apply to this task?" guesswork. When you pick up a task to work on — via `task next` or `task show <id>` — both surface the task's `kind` if set (`next` appends ` kind:<domain>`; `show` includes a `kind:` field).
+Two fields answer "which skill/docs apply to this task?" so you never re-derive it per session. `kind` resolves the layer default; `context[]` carries this task's delta. Load both before touching code:
 
-On seeing a `kind`, before touching code:
-
-1. Look up the value in the project `CLAUDE.md` task-kinds table.
-2. Invoke the mapped skill (if any) and read the mapped doc (if any).
+1. `kind` - look the value up in the project `CLAUDE.md` task-kinds table. Invoke the mapped skill and read the mapped doc.
+2. `context[]` - read or activate every entry (`kind: file | skill | doc`, `ref`, optional `why`). These are task-specific, so nothing else will supply them.
 3. Then start the task.
 
-If the project has no task-kinds table, or the task has no `kind`, skip this — proceed as normal. This is agent behavior; the tracker does not invoke skills itself.
+Skip whichever is absent: no task-kinds table or no `kind` skips step 1, no `context[]` skips step 2. A task with neither loads nothing extra and proceeds as normal.
+
+Run `task show <id>` before starting - it is the only command that emits both fields. `task next` appends ` kind:<domain>` and says nothing about `context[]`, so treat it as a pointer to the task, not as the full briefing.
+
+This is agent behavior; the tracker resolves neither field and invokes nothing itself.
 
 ## Auto mode
 
 "Auto mode" is when the user asks you to work tasks back-to-back without pausing for direction between each one (e.g. "run the tasks", "auto mode", "keep going through the queue"). It is opt-in — never enter it unless the user asks. When asked:
 
 1. `task next` (or `task list --ready`) to pick the next actionable task.
-2. Apply **Proactive context loading** above for that task's `kind`.
+2. `task show <id>`, then apply **Proactive context loading** above for that task's `kind` and `context[]`.
 3. `task set-status <id> in-progress`, do the work, mark subtasks/`done` as you go.
 4. Loop back to step 1 for the next ready task.
 
@@ -103,7 +100,8 @@ Producer skills invoke the CLI and branch on `contract_version`. If the CLI retu
 Integration shapes (per command):
 
 - `task new` → `{contract_version, id, uid, file}`
-- `task import` → `{contract_version, label_map: {<label>: <id>}, created: <n>}`
+- `task get-new-uid [--count n]` → `{contract_version, uids: [<ulid>, ...]}`
+- `task verify` → `{contract_version, ok, checked, problems: [...]}`; exit 4 when `problems` is non-empty
 - `task list [--compact]` → multi-line text (not YAML). Parse line-by-line if needed.
 - `task show <id>` → YAML detail (all fields + `archived: bool`).
 - `task why <id>` → multi-line text: title, goal, source list. Not YAML.
@@ -113,7 +111,7 @@ Full per-command schemas: `references/integration-contract.md`.
 
 ## File format
 
-Every task file: `schema: 1` at top; `uid` (ULID, immutable), `id` (human-readable string), `title`, `status` required. Optional: `kind`, `depends_on`, `depends_on_uids`, `goal`, `files[]`, `tests[]`, `notes[]`, `subtasks[]`, `sources[]`, `context[]`. `kind` is a freeform skill-domain label (e.g. `coding`, `testing`) that drives proactive context loading - see "Task kinds" under Project configuration. Filename prefix sets display order; ULID is identity. Full shape and rules: `references/file-format.md`.
+Every task file: `schema: 1` at top; `uid` (ULID, immutable), `id` (human-readable string), `title`, `status` required. Optional: `kind`, `depends_on`, `depends_on_uids`, `goal`, `files[]`, `tests[]`, `notes[]`, `subtasks[]`, `sources[]`, `context[]`. `kind` (freeform skill-domain label, e.g. `coding`, `testing`) and `context[]` (per-task reading list) together drive proactive context loading - see "Task kinds" and "Task context" under Project configuration. Filename prefix sets display order; ULID is identity. Full shape and rules: `references/file-format.md`.
 
 ## Invariants
 

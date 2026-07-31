@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 
 import { rebuildCache } from "./cache.mjs";
-import { cmdNew, cmdImport } from "./commands/create.mjs";
+import { EXIT } from "./schema.mjs";
+import { cmdNew, cmdGetNewUid } from "./commands/create.mjs";
 import { cmdList, cmdShow, cmdNext, cmdDeps, cmdGrep, cmdWhy } from "./commands/query.mjs";
 import {
   cmdSetStatus, cmdEdit, cmdAddFile, cmdRmFile, cmdAddChange,
@@ -16,12 +17,12 @@ import {
   cmdAddContext, cmdRmContext,
   cmdMove, cmdRm, cmdCancel, cmdReopen,
 } from "./commands/mutate.mjs";
-import { cmdArchive, cmdReindex, cmdRenumber, cmdMigrate } from "./commands/lifecycle.mjs";
+import { cmdArchive, cmdReindex, cmdRenumber, cmdMigrate, cmdVerify } from "./commands/lifecycle.mjs";
 
 const ROUTER = {
   init: cmdInit,
   new: (cwd, args) => cmdNew(cwd, args),
-  import: (cwd, args) => cmdImport(cwd, args._[0]),
+  "get-new-uid": cmdGetNewUid,
   list: cmdList,
   show: cmdShow,
   next: (cwd) => cmdNext(cwd),
@@ -48,6 +49,7 @@ const ROUTER = {
   cancel: cmdCancel,
   reopen: cmdReopen,
   archive: cmdArchive,
+  verify: (cwd) => cmdVerify(cwd),
   reindex: (cwd) => cmdReindex(cwd),
   renumber: (cwd) => cmdRenumber(cwd),
   migrate: cmdMigrate,
@@ -80,7 +82,9 @@ export async function main(argv, { cwd }) {
     } else if (res) {
       console.log(YAML.stringify(res));
     }
-    return 0;
+    // A command that succeeded but reports a non-zero verdict (task verify) carries the
+    // code on a symbol, so it stays out of the YAML consumers parse.
+    return res?.[EXIT] ?? 0;
   } catch (err) {
     console.error(err?.message || String(err));
     return err?.exitCode ?? 1;
@@ -147,7 +151,7 @@ function printHelp(code = 0) {
 Commands:
   init                            Bootstrap .tasks/ and gitignore
   new "<title>" [--goal ..] [--kind ..] [--file path:kind] [--depends-on id] [--source 'kind=..,ref=..'] [--context 'kind=..,ref=..,why=..']
-  import <batch.yaml>             Atomic batch create; returns label_map
+  get-new-uid [--count n]         Mint ULIDs for hand-written task files
   list [--compact|--all|--ready|--status s|--touching path|--blocked|--archived]
   show <id>
   next
@@ -167,6 +171,7 @@ Commands:
   move <id> --after <other>
   rm <id> [--force]               cancel <id> [--force]              reopen <id>
   archive --id <id> | --older-than <days>
+  verify                          Repo-wide integrity check; exit 4 if problems found
   reindex   renumber   migrate [--dry-run]
 Exit: 0 ok  1 internal  2 not-found  3 bad-input  4 domain-violation  5 lock  6 schema`;
   console.log(help);
