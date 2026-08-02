@@ -97,11 +97,15 @@ Mid-task rule: if you hit a wall later in the session and suspect history matter
 
 ## Step 7 - Compaction Obligation
 
+The only place COMMON.md gets compacted. Expect it over budget - offboard appends but never evicts.
+
 ```bash
 grep -cv '^\s*$' COMMON.md
 ```
 
-Over 120 nonblank lines: trim below 120 following SKILL.md's eviction order (full text always survives in the journal, so eviction is safe), or add a one-line note to COMMON.md recording why compaction isn't possible right now. Over 150: compaction is mandatory, no deferral.
+Over 120 nonblank lines: trim below 120 following SKILL.md's eviction order (full text always survives in the journal, so eviction is safe), or add a one-line note to COMMON.md recording why compaction isn't possible right now. Over 150: compaction is mandatory, no deferral - at minimum reduce every superseded entry to a one-line tombstone.
+
+Evict against what current work depends on (you have just read it in Steps 2-5), not against age alone.
 
 While in the file: merge obviously-duplicate topics (match-first rule failed somewhere) and fix stale statuses you can verify from Steps 2-5. Don't touch entries you can't verify.
 

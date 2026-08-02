@@ -141,9 +141,9 @@ notes, written at the moment of abandonment). What was tried, what broke, WHY.
 ```markdown
 # Common Knowledge
 
-Budget: target 120 nonblank lines, hard ceiling 150. Check with:
-`grep -cv '^\s*$' COMMON.md`. Over 120 at onboard: compact (see Section Rules)
-or record here in one line why compaction isn't possible.
+Budget: target 120 nonblank lines, hard ceiling 150. Enforced at ONBOARD only
+(`grep -cv '^\s*$' COMMON.md`), never at offboard. Over budget: compact per
+Section Rules, or record here in one line why compaction isn't possible.
 
 ## Constraints & Conventions
 
@@ -203,7 +203,7 @@ Format: topic [status] (task ids): session ids - one-phrase state.
 
 ### COMMON.md Budget
 
-Eviction order when over 120 nonblank lines:
+Applied at onboard (Step 7) only. Eviction order when over 120 nonblank lines:
 
 1. Superseded entries: reduce to one-line tombstone with replacement anchor + evidence link
 2. Shelved items untouched for ~5-10 sessions
