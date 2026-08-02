@@ -7,17 +7,17 @@ description: Workflow for managing issues and merge/pull requests on git remote 
 
 ## Load Project Config
 
-Check for a `/managing-git-remote` section in the project's CLAUDE.md `SKILL CONFIGURATION`. It should specify:
+Check for a `managing-git-remote` section in the project instructions under `SKILL CONFIGURATION`. It should specify:
 
 - **Platform** — GitLab or GitHub
 - **CLI tool** — `glab` or `gh`
-- **Task tracker** — tool that tracks implementation work (e.g., `/managing-tasks`, Linear, Jira), if any
+- **Task tracker** — tool that tracks implementation work (e.g., `managing-tasks`, Linear, Jira), if any
 - **Task tracker commands** — how to list/view tasks (e.g., `task list`, `task show <id>`)
 - **Project config** — path to project-specific config file with additional context (e.g., `context/GITLAB_WORKFLOW.md`)
 
 If a project config file is specified, read it for project-specific details.
 
-If no config exists, infer platform from remote URL (`git remote -v`). Default to no task tracker correlation. Offer to add a `/managing-git-remote` section to CLAUDE.md's SKILL CONFIGURATION.
+If no config exists, infer platform from remote URL (`git remote -v`). Default to no task tracker correlation. Offer to add a `managing-git-remote` section to the project instructions under `SKILL CONFIGURATION`.
 
 ---
 

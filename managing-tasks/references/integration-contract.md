@@ -3,7 +3,7 @@
 How producer skills emit tasks and parse tracker output. Every machine-consumable output includes top-level `contract_version: 1`.
 
 **This file is the single source of truth for the producer contract.** Producer skills
-(`/planning-tasks`, `/reviewing-code`, `/journaling-session-memory`) read it rather than
+(planning-tasks, reviewing-code, journaling-session-memory) read it rather than
 keeping their own copy of these shapes; their own reference files carry only skill-specific
 editorial standards. A shape described in two places drifts in one of them.
 
@@ -141,7 +141,7 @@ In a task file, write the structured form (`kind:`, `ref:`, `meta:`) - no quotin
 
 ## Producer-side patterns
 
-### `/planning-tasks` → task files + `task verify`
+### planning-tasks → task files + `task verify`
 
 1. Get uids: `task get-new-uid --count <number-of-tasks>`.
 2. Write one `.tasks/NNN-<slug>.yaml` per task, per § Writing task files directly.
@@ -153,9 +153,9 @@ In a task file, write the structured form (`kind:`, `ref:`, `meta:`) - no quotin
 
 Verify is a report, not a repair, and the writes were not atomic - fix forward from what it says rather than expecting a rollback.
 
-The per-task quality gates a task must satisfy before it is written (title, goal, granularity, the blocking TDD gate) are `/planning-tasks`' editorial standard, not this contract. They live in `~/.claude/skills/planning-tasks/references/managing-tasks-integration.md`.
+The per-task quality gates a task must satisfy before it is written (title, goal, granularity, the blocking TDD gate) are planning-tasks' editorial standard, not this contract. They live in `../../planning-tasks/references/managing-tasks-integration.md`.
 
-### `/reviewing-code` Pass 6 → `task new`
+### reviewing-code Pass 6 → `task new`
 
 One `task new` command per follow-up finding:
 
@@ -168,7 +168,7 @@ task new "<finding title>" \
 
 Emitted as a list of shell commands. User runs them after review.
 
-### `/journaling-session-memory` offboard
+### journaling-session-memory offboard
 
 Skip if `.tasks/` missing.
 
@@ -178,7 +178,7 @@ Skip if `.tasks/` missing.
 
 Tracker is authoritative on task state; the session journal is authoritative on narrative.
 
-### `/journaling-session-memory` onboard
+### journaling-session-memory onboard
 
 Skip if `.tasks/` missing.
 

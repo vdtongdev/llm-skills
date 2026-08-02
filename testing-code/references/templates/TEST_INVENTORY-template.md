@@ -2,7 +2,7 @@
 
 <!-- This file tracks what is tested and where. -->
 <!-- Update it when adding, removing, or moving tests. -->
-<!-- The /testing-code skill reads this to check coverage before writing new tests. -->
+<!-- The testing-code skill reads this to check coverage before writing new tests. -->
 
 ---
 

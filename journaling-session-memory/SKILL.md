@@ -5,7 +5,7 @@ description: Use when starting a session to resume previous work ("continue from
 
 # Journaling Session Memory
 
-Transfer working context between Claude sessions so the next session resumes without re-discovering what was done, what failed, and what's next.
+Transfer working context between agent sessions so the next session resumes without re-discovering what was done, what failed, and what's next.
 
 Design: an append-only journal (one file per session) plus a small curated COMMON.md read at every onboard. Past sessions are immutable evidence; COMMON.md is promoted, project-scoped knowledge with links back to the evidence. Nothing is ever lost, and onboard cost stays roughly constant regardless of project age.
 
@@ -38,7 +38,7 @@ context/session_states/
 └── NNNN-<slug>.md     - highest id = latest session (live until finalized)
 ```
 
-Projects can override the folder in their CLAUDE.md with a line like:
+Projects can override the folder in their project instructions with a line like:
 
 ```
 session states: path/to/folder
@@ -124,7 +124,7 @@ notes, written at the moment of abandonment). What was tried, what broke, WHY.
 ### Docs That Will Need Reading
 
 - `path/to/doc.md` - why the next agent needs it before touching code
-- `/skill-name` - why this task needs it invoked
+- `skill-name` - why this task needs it invoked
 
 ### Docs That May Need Updating
 
@@ -184,7 +184,7 @@ Format: topic [status] (task ids): session ids - one-phrase state.
 
 ### Authority
 
-- Task tracker (`.tasks/`, see /managing-tasks) owns task state. Never restate tracker status in COMMON.md beyond a task id reference.
+- Task tracker (`.tasks/`, see managing-tasks) owns task state. Never restate tracker status in COMMON.md beyond a task id reference.
 - Journal files own narrative evidence. Finalized files are never edited; fixes go in the current session's Corrections.
 - COMMON.md owns promoted project-scoped knowledge, always with an evidence link (session id) pointing back into the journal.
 - On conflict: tracker beats journal on task state; the newest journal entry beats COMMON.md on facts (and COMMON.md should then be updated).

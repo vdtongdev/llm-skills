@@ -9,7 +9,7 @@ Tasks live as YAML files under `.tasks/<prefix>-<slug>.yaml`; mutations serializ
 
 ## CLI entrypoint
 
-Binary: `${skills_dir}/managing-tasks/bin/task` (Node shim). Projects alias to `task` in shells. (~/.claude/skills for claude, ~/.codex/skills for codex, etc.)
+Binary: `~/.claude/skills/managing-tasks/bin/task` (Node shim). Both hosts use this canonical executable and its installed dependencies. Projects may alias it to `task` in shells.
 
 Every command prints YAML on stdout (starts with `contract_version: 1`) or a formatted multi-line block for human-oriented commands (`list`, `show`, `deps`, `grep`, `why`, `next`). Errors go to stderr; exit code classifies the failure (see `references/exit-codes.md`).
 
@@ -19,19 +19,19 @@ Full flag and example spec: `references/cli-reference.md`.
 
 ## Project configuration
 
-Read from project `CLAUDE.md` under a `/managing-tasks` block:
+Read from the project instructions under a `managing-tasks` block:
 
 - Tasks directory — default `.tasks/`
 - Archive policy — manual only (no auto-archive). Users run `task archive --older-than <days>` or `task archive --id <id>` explicitly.
 - TDD subtask kinds - freeform `kind:` label on subtasks (e.g., `RED`, `GREEN`). Tracker does not enforce.
-- Task kinds — freeform `kind:` label on the whole task (e.g., `coding`, `testing`, `docs`, `infra`). A **task-kinds table** in the project's `CLAUDE.md` maps each value to the skill to invoke and the antipatterns doc to load. The tracker stores the label and nothing else; the agent reads the table (see "Proactive context loading"). Recommended shape:
+- Task kinds — freeform `kind:` label on the whole task (e.g., `coding`, `testing`, `docs`, `infra`). A **task-kinds table** in the project instructions maps each value to the skill to invoke and the antipatterns doc to load. The tracker stores the label and nothing else; the agent reads the table (see "Proactive context loading"). Recommended shape:
 
   ```
-  ## Task kinds (/managing-tasks)
+  ## Task kinds (managing-tasks)
   | kind    | invoke skill    | load doc                         |
   |---------|-----------------|----------------------------------|
-  | coding  | /writing-code   | context/ANTIPATTERNS_CODING.md   |
-  | testing | /testing-code   | context/ANTIPATTERNS_TESTING.md  |
+  | coding  | writing-code    | context/ANTIPATTERNS_CODING.md   |
+  | testing | testing-code    | context/ANTIPATTERNS_TESTING.md  |
   | docs    | -               | context/STYLE.md                 |
   ```
 
@@ -45,7 +45,7 @@ No config file is required; the CLI works with defaults.
 
 `kind` resolves the layer default; `context[]` carries this task's delta. Load both before touching code:
 
-1. `kind` - look the value up in the project `CLAUDE.md` task-kinds table. Invoke the mapped skill and read the mapped doc.
+1. `kind` - look the value up in the project instructions task-kinds table. Invoke the mapped skill and read the mapped doc.
 2. `context[]` - read or activate every entry (`kind: file | skill | doc`, `ref`, optional `why`). These are task-specific, so nothing else will supply them.
 3. Then start the task.
 
@@ -70,7 +70,7 @@ Stop the loop and hand back to the user when any of these hits:
 
 Auto mode does **not**:
 
-- Run `/reviewing-code` between tasks. Review is batch-end only, on the user's cadence (plan → break down → run → review), not per-task.
+- Run reviewing-code between tasks. Review is batch-end only, on the user's cadence (plan → break down → run → review), not per-task.
 - Self-detect "context running low" and offboard on its own - it cannot measure that reliably. The user watches context and interrupts; that interrupt is the offboard trigger.
 
 ## Integration contract

@@ -51,7 +51,7 @@ sources:
 | `id` | yes | string | Human-readable. May change on `renumber` or merge-conflict. **Always quote** — bare `7` would parse fine but bare `2.1` parses as float. |
 | `title` | yes | string | Imperative one-liner. |
 | `status` | yes | string | One of `pending`, `in-progress`, `done`, `blocked`, `cancelled`. |
-| `kind` | no | string | Freeform skill-domain label for the whole task (e.g. `coding`, `testing`, `docs`, `infra`). Not enforced, no enum. The consuming project's `CLAUDE.md` maps each value to a skill + antipatterns doc to load before working the task. `kind` carries the *layer default* bundle; anything this one task needs beyond that default goes in `context[]`. Distinct from `subtasks[].kind`, which labels TDD phase (RED/GREEN), not domain. |
+| `kind` | no | string | Freeform skill-domain label for the whole task (e.g. `coding`, `testing`, `docs`, `infra`). Not enforced, no enum. The consuming project's instructions map each value to a skill + antipatterns doc to load before working the task. `kind` carries the *layer default* bundle; anything this one task needs beyond that default goes in `context[]`. Distinct from `subtasks[].kind`, which labels TDD phase (RED/GREEN), not domain. |
 | `depends_on` | no | string[] | IDs only. Resolved via `uid` on merge. |
 | `depends_on_uids` | no | string[] | Mirror of `depends_on` via ULID. Maintained automatically on write; canonical during merge-conflict resolution. |
 | `goal` | no | string | Block scalar (`|`) for multi-line prose. |

@@ -47,13 +47,7 @@ steps, placeholder content, or tasks so vague they can't be acted on.
 
 ## Usage
 
-```python
-Agent({
-  subagent_type: "general-purpose",
-  model: "sonnet",
-  prompt: "<the prompt above with PRD_FILE_PATH filled in>"
-})
-```
+Dispatch the prompt above through the active host's native read-only subagent mechanism. Substitute the exact project-relative PRD path before dispatch.
 
 If issues are found, fix them in the PRD and re-dispatch the reviewer.
 Max 3 iterations — if still failing, surface to user for guidance.

@@ -12,7 +12,7 @@ Check the project's configured folder (see SKILL.md "Project Layout"). Default: 
 
 **Folder exists:** proceed to Step 2.
 
-**Folder missing, but legacy `context/SESSION_STATE.md` exists** (or the path a `session state:` line in project CLAUDE.md points to): migrate mechanically, zero classification:
+**Folder missing, but legacy `context/SESSION_STATE.md` exists** (or the path a `session state:` line in the project instructions points to): migrate mechanically, zero classification:
 
 1. Create the folder
 2. `git mv` (or `mv` if untracked) the old file to `session_states/0000-legacy.md` - verbatim, no edits
@@ -47,7 +47,7 @@ bash ~/.claude/skills/journaling-session-memory/scripts/git-state.sh
 
 - **Stash from a previous session?** Flag to user: "Found stash: `<name>`. Apply it?" Wait for confirmation.
 - **Branch mismatch** vs the latest session file's `branch:` frontmatter? Flag to user.
-- **Dirty state that doesn't match the capsule's Uncommitted Changes?** Flag to user before touching anything - something changed outside Claude sessions.
+- **Dirty state that doesn't match the capsule's Uncommitted Changes?** Flag to user before touching anything - something changed outside agent sessions.
 
 ---
 
@@ -59,14 +59,15 @@ Signals the previous session died without offboarding (any one is enough to susp
 - Commits in `git log` newer than the file's `head:` hash
 - Tracker shows task/subtask states the capsule doesn't mention
 
-These are signals, not proof - hooks, rebases, or work outside Claude can explain git divergence. Report as **"previous session appears to have ended uncleanly"**, never as fact, and never silently "fix" anything.
+These are signals, not proof - hooks, rebases, or work outside agent sessions can explain git divergence. Report as **"previous session appears to have ended uncleanly"**, never as fact, and never silently "fix" anything.
 
 Recovery, cheapest first:
 
 1. The dead session's Milestones section - this is why checkpoints exist; whatever was checkpointed survived
 2. `git log` + `git diff <head>..HEAD` - what actually changed since the last known state
 3. Tracker notes written mid-session (`task show <id>`)
-4. Last resort, offer, don't default: "I can dig through the previous session's transcript if the diff doesn't explain the state." Transcripts persist as JSONL under `~/.claude/projects/<project-dir>/` - verify the path exists before promising anything
+
+If these sources cannot reconstruct enough state, report the gap and ask the user. Do not inspect provider transcripts.
 
 After recovery: leave the dead file's `finalized: false` as-is (it is evidence), summarize reconstructed state to the user, and note the reconstruction in your own session file's first milestone.
 

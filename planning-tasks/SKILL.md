@@ -31,18 +31,14 @@ Understand the current state before planning changes.
 
 **Few files (< 5):** Read them directly.
 
-**Broad scan (many files, unclear structure):** Use the Agent tool to spawn an Explore subagent:
+**Broad scan (many files, unclear structure):** Dispatch a read-only Explore subagent through the active host's native subagent mechanism. Give it this prompt:
 
-```
-Agent(
-  subagent_type: "Explore",
-  model: "sonnet",
-  prompt: "Read the project structure doc first (if one exists) for codebase layout.
-  Then find [what you need]..."
-)
+```text
+Read the project structure doc first, if one exists. Then find [what you need].
+Report exact paths, symbols, and evidence. Do not edit files.
 ```
 
-If the project's CLAUDE.md references a structure doc (e.g., FILE_STRUCTURE.md), tell the agent to read it first. Never spawn Haiku for research — it misses nuance.
+If the project instructions reference a structure doc (e.g., `FILE_STRUCTURE.md`), tell the subagent to read it first. Use a model capable of nuanced codebase research.
 
 **If research reveals the feature already exists** (fully or partially), surface this to the user before continuing. Don't write a PRD for existing code.
 
@@ -62,7 +58,7 @@ Settle all architectural and design questions in this phase. The executor should
 - Component structure and state
 - HTML layout and testability attributes (e.g., data-testid names) — these must be decided at design time, not left to the implementer
 
-If the project's CLAUDE.md references a style guide or design skill, read/use them here and capture the result in the PRD. If no style guide exists, follow standard language/framework conventions and note your choices in the PRD.
+If the project instructions reference a style guide or design skill, read/use them here and capture the result in the PRD. If no style guide exists, follow standard language/framework conventions and note your choices in the PRD.
 
 **Complex logic:** Use pseudocode to convey ideas when the approach isn't obvious. Don't dictate every line — the executor needs room to adapt when reality differs from the plan.
 
@@ -70,13 +66,13 @@ If the project's CLAUDE.md references a style guide or design skill, read/use th
 
 See `references/prd-template.md` for the full template with examples.
 
-**Where to save:** Check the project's CLAUDE.md first for a canonical PRD path. Default: `context/prd-<feature-name>.md` — create the `context/` directory if it doesn't exist.
+**Where to save:** Check the project instructions first for a canonical PRD path. Default: `context/prd-<feature-name>.md` — create the `context/` directory if it doesn't exist.
 
 ### 5. Review the Plan
 
 Two passes, different failure modes.
 
-#### 5a. Completeness Review (Claude subagent)
+#### 5a. Completeness Review (native subagent)
 
 Catches document-QA issues: TODOs, vague paths, missing signatures, untestable cases. See `references/plan-reviewer-prompt.md`.
 
@@ -89,7 +85,7 @@ Catches document-QA issues: TODOs, vague paths, missing signatures, untestable c
 
 Same agent that wrote the plan fixes it (preserves context).
 
-#### 5b. Adversarial Review (Codex, multi-round)
+#### 5b. Adversarial Review (opposite provider, multi-round)
 
 Catches idea-level flaws: unvalidated assumptions, missing failure modes, scope bugs. See `references/adversarial-reviewer-prompt.md`.
 
@@ -100,23 +96,23 @@ Catches idea-level flaws: unvalidated assumptions, missing failure modes, scope 
 
 **Loop:**
 
-1. Claude invokes Codex via `codex exec` with full PRD text. Record the session id, the model, and the repo HEAD at pass start.
-2. Codex emits findings (bundled, numbered) plus any questions
-3. Verify before triaging. Codex has no repo access, so every quote it makes comes from the PRD, and the PRD's own citations may be stale. Spot-check each quoted path, symbol and line against the tree. A finding built on a stale citation is rejected on that basis, and the citation gets fixed.
-4. Stop. Present findings to user, alongside any defects Claude found in the same pass that Codex did not. Self-disclosure is part of the round, not a favour.
+1. Invoke the opposite-provider CLI with the full PRD text, using the host branch in `references/adversarial-reviewer-prompt.md`. Record the provider, session id, model when reported, and repo HEAD at pass start.
+2. The adversarial reviewer emits bundled, numbered findings plus any questions.
+3. Verify before triaging. The reviewer receives only the supplied PRD and is instructed not to inspect the repository, while the PRD's citations may be stale. Spot-check each quoted path, symbol, and line against the tree. Reject a finding built on a stale citation and fix the citation.
+4. Stop. Present findings to the user alongside any defects the primary agent found in the same pass. Self-disclosure is part of the round, not a favour.
 5. User decides: continue, stop, or update PRD now
-6. If continue: consolidate the PRD per 5c, re-run the scoped 5a, then draft an open-minded rebuttal (concede where valid, push back with codebase evidence) and send it with `codex exec resume <session-id> "<rebuttal>"`
+6. If continue: consolidate the PRD per 5c, re-run the scoped 5a, then draft an open-minded rebuttal and resume the explicit opposite-provider session per `references/adversarial-reviewer-prompt.md`.
 7. Repeat from step 2 until user stops
 
 No round cap. User judges.
 
-**Scope each round at the previous round's new text.** A fix written into the PRD is unreviewed prose. In field use, each round's HIGH severity finding was found in text the previous round's fix had just written, three rounds running. Tell Codex where the new text is.
+**Scope each round at the previous round's new text.** A fix written into the PRD is unreviewed prose. Tell the adversarial reviewer where the new text is.
 
-**Resume mechanics:** always the explicit session id, never `--last`. Confirm the id by grepping `~/.codex/sessions` for a phrase from the previous reply. Redirect stdin (`< /dev/null`) so the call does not hang. On the `resume` subcommand, flags like `-s` / `--skip-git-repo-check` must precede `resume`.
+**Resume mechanics:** always use the explicit session id. Follow the provider-specific command and id-verification rules in `references/adversarial-reviewer-prompt.md`.
 
-**Claude's role:** attorney, not postman. Open-minded, agree when sensible, push back with evidence when not. No performative agreement, no fake politeness. If Codex asks a codebase question, Claude reads and answers.
+**Primary agent's role:** attorney, not postman. Be open-minded, agree when sensible, and push back with evidence when not. If the reviewer asks a codebase question, the primary agent reads and answers.
 
-**After user stops:** Claude summarizes standing findings into conceded / disputed / accepted-risk. Updates PRD per user's rulings.
+**After user stops:** the primary agent summarizes standing findings into conceded / disputed / accepted-risk and updates the PRD per the user's rulings.
 
 #### 5c. Consolidate the PRD After Each Round
 
@@ -163,7 +159,7 @@ Send 5b the PRD plus this register. Never the deliberation transcript - it ancho
 
 ### 6. Create Tasks
 
-**If the user opts out of task creation, or `.tasks/` is absent and the user does not want `/managing-tasks` enabled:** The PRD with its file list and test plan is the deliverable. Skip the rest of this section.
+**If the user opts out of task creation, or `.tasks/` is absent and the user does not want managing-tasks enabled:** The PRD with its file list and test plan is the deliverable. Skip the rest of this section.
 
 Otherwise, write one task file per task into `.tasks/` from the PRD's Implementation Details section, then run `task verify`.
 
@@ -180,7 +176,7 @@ Otherwise, write one task file per task into `.tasks/` from the PRD's Implementa
 
 **The TDD gate (blocking):**
 
-When breaking down tasks, take the project's testing conventions into account. They are normally written in the project's `CLAUDE.md`, and they decide this gate. A useful shape, if the project has not already declared one:
+When breaking down tasks, take the project's testing conventions into account. They are normally written in the project instructions, and they decide this gate. A useful shape, if the project has not already declared one:
 
 | Layer               | Policy         |
 | ------------------- | -------------- |
@@ -203,7 +199,7 @@ When breaking down tasks, take the project's testing conventions into account. T
 
 Silence is not option (c). A production-code task with no subtasks, no `tests[]` and no stated deviation fails the gate and is not submitted.
 
-**If the project declares no testing convention, ask the user once** before writing the task files, and offer to write the answer into the project's `CLAUDE.md`. Do not silently default in either direction.
+**If the project declares no testing convention, ask the user once** before writing the task files, and offer to write the answer into the project instructions. Do not silently default in either direction.
 
 **Granularity rules:**
 
@@ -220,7 +216,7 @@ Silence is not option (c). A production-code task with no subtasks, no `tests[]`
 
 **Task file format & submission:**
 
-Write one `.tasks/NNN-<slug>.yaml` file per task, directly. Full schema, envelope formats and the allocation rules for `id`, `NNN` and `uid`: `~/.claude/skills/managing-tasks/references/integration-contract.md` - that file is the contract and is authoritative. `references/managing-tasks-integration.md` carries only this skill's per-task quality checklist.
+Write one `.tasks/NNN-<slug>.yaml` file per task, directly. Full schema, envelope formats, and allocation rules for `id`, `NNN`, and `uid`: `../managing-tasks/references/integration-contract.md` - that file is authoritative. `references/managing-tasks-integration.md` carries only this skill's per-task quality checklist.
 
 Get `uid` values from `task get-new-uid --count <n>`. Never hand-write one.
 

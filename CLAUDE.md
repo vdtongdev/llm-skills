@@ -1,5 +1,9 @@
 # DOS and DON'TS
 
+**Project instructions**: `CLAUDE.md` in Claude Code, `AGENTS.md` in Codex. When both names resolve to the same file, read or edit it once. If they are distinct and a shared rule must be edited, ask which file is authoritative.
+
+Refer to skills by bare name in shared prose, for example `planning-tasks`. Do not require Claude's `/skill-name` or Codex's `$skill-name` syntax unless documenting host UI behavior.
+
 **DO**: Ask proactively. If anything unclear, ask. If you're stuck, ask. If you think you don't have enough context to do some work, ask. User can provide you with info you might not even know you're missing.
 **DON'T**: Don't assume. If something is unclear, ask before writing a single line. Never make silent assumptions about intent, architecture, or requirements.
 
@@ -24,15 +28,16 @@
 **DON'T**: Don't reinvent the wheel if a solution already exists.
 
 **DO**: Think about and point out a better approach than what the user is asking, if applicable. Explain pros and cons in a few bullets. If the current request is still reasonable, proceed, unless the alternative avoids serious risk or wasted work.
-**DON'T**: Don't use claude's built-in memory file. I have specific skills designed to manage out-of-session memory (/journaling-session-memory), so claude's is inferior and duplicate
+**DON'T**: Don't use the host's built-in automatic memory. Use journaling-session-memory for out-of-session memory instead; duplicate memory systems drift.
 
 **DO**: Spawn a code review agent - or better, an adversarial code review agent - before finalizing work.
 **DON'T**: Don't forget antipatterns, if the project provides them.
 
-## Third opinions with codex
+## Third opinions
 
-- `codex` CLI is a useful source of a third opinion. Invoke `codex exec "<prompt>"` with the relevant context.
-- If the discussion runs more than one round, continue with `codex exec resume <session-id> "<prompt>"` to preserve context and get a more informed response. Prefer the explicit session id over `--last`. Confirm you have the right one by grepping (`~/.codex/sessions`) the transcript for a phrase you remember from the reply.
-- **Sandbox failure inside a dev container.** If (**and only if**) this env is a sandbox dev env, use `codex exec --dangerously-bypass-approvals-and-sandbox "<prompt>"` instead. Otherwise codex's sandbox `bwrap` will fail to run.
-  - Never run `--dangerously-bypass-approvals-and-sandbox` unless you are certain you are in a sandboxed environment. If you are not sure which you are on, ask instead of assuming.
-- Codex can surface insights and overlooked details. Weigh them, don't accept blindly.
+- **From Claude Code:** invoke `codex exec "<prompt>"`. Resume with `codex exec resume <session-id> "<prompt>"`; use the explicit id, never `--last`.
+- **From Codex:** invoke `claude -p --output-format json "<prompt>"`. Read `session_id` from the JSON and resume with `claude -p --resume <session-id> --output-format json "<prompt>"`.
+- Confirm the explicit session id before resuming. Codex sessions live under `~/.codex/sessions`; Claude returns its id in JSON output.
+- The reviewer is a trusted same-user process, not a security sandbox. Supply the relevant context and instruct it not to inspect unrelated files.
+- If a reviewer CLI fails inside an externally sandboxed development environment, bypass its own sandbox or permissions only after verifying the external sandbox exists. If unsure, ask.
+- An opposite-provider reviewer can surface overlooked details. Weigh its findings; do not accept them blindly.

@@ -16,7 +16,7 @@
 ## Classification Rules
 
 - **CLI reference vs integration contract**: CLI reference documents what humans/agents type; integration contract documents the YAML shape producers parse. A new `--flag` goes to CLI reference. A changed output field goes to integration contract.
-- **Invariant vs rule of thumb**: Invariants are machine-enforced (validated in `schema.mjs` or command guards). Rules of thumb (e.g., "prefer small tasks") are workflow guidance and live in `/planning-tasks`, not here.
+- **Invariant vs rule of thumb**: Invariants are machine-enforced (validated in `schema.mjs` or command guards). Rules of thumb (e.g., "prefer small tasks") are workflow guidance and live in planning-tasks, not here.
 - **SKILL.md vs reference**: SKILL.md is the activation surface (≤200 lines). Anything that grows past a paragraph belongs in a reference.
 - **README vs everything else**: README is for a human setting the tracker up or getting unstuck. It may repeat a command an agent doc also carries, but never a shape or contract — those drift. Point at the reference instead.
 

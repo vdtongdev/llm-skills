@@ -1,12 +1,12 @@
 # managing-tasks
 
-A project-local task tracker for Claude Code projects. Tasks are plain YAML files under `.tasks/` in your repo. You manage them with a CLI; Claude Code skills can create and update them automatically during planning, review, and session handoff.
+A project-local task tracker for Claude Code and Codex projects. Tasks are plain YAML files under `.tasks/` in your repo. You manage them with a CLI; agent skills can create and update them during planning, review, and session handoff.
 
 ## Who controls it
 
 **You** — run `task` commands directly to create, inspect, and update tasks.
 
-**Claude Code skills** — `/planning-tasks` writes task files after feature planning; `/reviewing-code` can log follow-up findings as tasks; `/journaling-session-memory` reads task state during session handoff. Claude acts on your behalf but does not run autonomously; you review tasks before any work begins.
+**Agent skills** — planning-tasks writes task files after feature planning; reviewing-code can log follow-up findings as tasks; journaling-session-memory reads task state during session handoff. The active agent acts on your behalf but does not run autonomously; you review tasks before work begins.
 
 **The files** — every task is a plain YAML file. You can open them in any editor, commit them, and diff them like any source file. Use the CLI for creating, renaming, and changing state; edit by hand only for fields the CLI does not expose, and keep required fields intact (`schema`, `uid`, `id`, `title`, `status`).
 
@@ -15,12 +15,12 @@ A project-local task tracker for Claude Code projects. Tasks are plain YAML file
 ## Before you start
 
 - Node.js is required (v18+)
-- The CLI lives at `<skills-dir>/managing-tasks/bin/task` — it is machine-wide, not project-scoped. The skills dir is `~/.claude/skills` for Claude Code, `~/.codex/skills` for codex; examples below use the Claude Code path
+- The canonical CLI is `~/.claude/skills/managing-tasks/bin/task`; both hosts use it. The Codex skill mirror lives at `~/.agents/skills`, but it does not own a second dependency installation.
 - `.tasks/` is project-scoped — each repo gets its own task list
 - Install dependencies once, per machine:
 
 ```bash
-cd ~/.claude/skills/managing-tasks && npm install
+npm ci --prefix ~/.claude/skills/managing-tasks
 ```
 
 ---
@@ -101,7 +101,7 @@ sources:
 
 Two optional fields tell whoever works a task what to load before starting:
 
-- **`kind`** — a freeform label for the task's domain (`coding`, `testing`, `docs`, `infra`). Your project's `CLAUDE.md` maps each value to the skills and antipattern docs to load. It is the *per-layer default*, edited in one place.
+- **`kind`** — a freeform label for the task's domain (`coding`, `testing`, `docs`, `infra`). Your project instructions map each value to the skills and antipattern docs to load. It is the *per-layer default*, edited in one place.
 - **`context[]`** — what *this one task* needs beyond that default: a file to read, a skill to invoke, a doc to check.
 
 ```bash
@@ -199,11 +199,11 @@ task set-status 6 done
 
 ### Session handoff
 
-When you end a session with Claude, `/journaling-session-memory` reads `task list` to populate the session journal. When you resume, it reads `task list --ready` to surface what to pick up next. You do not need to run any task commands for this — Claude handles it automatically.
+When you end an agent session, journaling-session-memory reads `task list` to populate the session journal. When you resume, it reads `task list --ready` to surface what to pick up next. You do not need to run task commands for this; the active agent handles them.
 
 ### Reviewing a planned set of tasks
 
-`/planning-tasks` writes one `.tasks/NNN-<slug>.yaml` file per task directly, then runs `task verify` to check the result. Writing is **not atomic**: a run that fails partway leaves the files it already wrote, so review what landed rather than assuming all-or-nothing.
+planning-tasks writes one `.tasks/NNN-<slug>.yaml` file per task directly, then runs `task verify` to check the result. Writing is **not atomic**: a run that fails partway leaves the files it already wrote, so review what landed rather than assuming all-or-nothing.
 
 ```bash
 task verify    # dangling deps, cycles, duplicate ids, invalid files
@@ -215,21 +215,21 @@ task deps 7    # see dependencies for task 7
 
 ---
 
-## Claude Code skill integrations
+## Skill integrations
 
 | Skill | What it does with tasks |
 |-------|------------------------|
-| `/planning-tasks` | Writes task files directly after feature planning; gates on `task verify` |
-| `/reviewing-code` | May create follow-up tasks from review findings via `task new` |
-| `/journaling-session-memory` | Reads task state on session start/end; does not create tasks |
+| planning-tasks | Writes task files directly after feature planning; gates on `task verify` |
+| reviewing-code | May create follow-up tasks from review findings via `task new` |
+| journaling-session-memory | Reads task state on session start/end; does not create tasks |
 
 Each skill's own `SKILL.md` documents the exact commands it uses and when.
 
-### When to run `task` yourself vs let Claude handle it
+### When to run `task` yourself vs let the agent handle it
 
-- **Let Claude handle it** during `/planning-tasks`, code review, and session start/end — the skills wire into the tracker automatically
+- **Let the agent handle it** during planning-tasks, code review, and session start/end - the skills wire into the tracker automatically
 - **Run `task` yourself** to check status, update state during work, add notes, or triage what to do next
-- **Always review** tasks Claude creates before starting work — you can edit, split, or remove them
+- **Always review** tasks an agent creates before starting work - you can edit, split, or remove them
 
 ---
 

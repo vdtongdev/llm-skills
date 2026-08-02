@@ -1,6 +1,6 @@
 # Testing Instructions
 
-<!-- PROJECT-SPECIFIC: Fill in this file for your project. This is consumed by the /testing-code skill. -->
+<!-- PROJECT-SPECIFIC: Fill in this file for your project. This is consumed by the testing-code skill. -->
 
 ---
 
@@ -34,7 +34,7 @@ make test-e2e           # E2E tests only
 
 ## Test File Structure
 
-<!-- Tell the /testing-code skill where tests live in this project -->
+<!-- Tell the testing-code skill where tests live in this project -->
 
 | Layer | Location | Runs via |
 |---|---|---|
@@ -88,5 +88,5 @@ make test-e2e           # E2E tests only
 
 ## Notes
 
-<!-- Anything else the /testing-code skill should know about testing in this project -->
+<!-- Anything else the testing-code skill should know about testing in this project -->
 <!-- E.g.: "Integration tests require Docker running", "E2E tests need the frontend built first" -->

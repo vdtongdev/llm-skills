@@ -7,17 +7,17 @@ description: Multi-pass code review of a branch before merge. Use when the user 
 
 Multi-pass review of a branch's changes. Reads files fully, checks against project antipatterns, produces structured findings with severity. Does not fix — that's a separate task.
 
-May span multiple sessions. Hand off via `/journaling-session-memory`.
+May span multiple sessions. Hand off via `journaling-session-memory`.
 
 ## Project Configuration
 
-Project's CLAUDE.md may specify:
+Project instructions may specify:
 
 - **Base branch** — if unset, infer from `git branch -a`. Common conventions: `master → dev → feature`, or `main → feature`. Pick the obvious upstream; ask the user only if multiple plausible bases exist.
 - **Antipattern docs** — paths to project antipattern files. If none, skip the antipattern cross-reference step
 - **Stack-conditional passes** — e.g., skip Pass 4 if no frontend exists
 
-Read these from CLAUDE.md before Setup.
+Read these from the project instructions before Setup.
 
 ## Setup
 
@@ -36,7 +36,7 @@ Read these from CLAUDE.md before Setup.
 
    For these, inspect the source/config that produced them if relevant (e.g., `pyproject.toml` change behind a `uv.lock` diff), not the artifact itself.
 
-3. Build a **review checklist** — one `[ ]` per changed file, grouped by pass. Write it to the current session journal file immediately (via `/journaling-session-memory`, checkpoint mode). Example:
+3. Build a **review checklist** — one `[ ]` per changed file, grouped by pass. Write it to the current session journal file immediately (via `journaling-session-memory`, checkpoint mode). Example:
 
    ```
    ## Review Checklist
@@ -156,7 +156,7 @@ Also check:
 
 ### Follow-up findings → task tracker
 
-For cross-cutting findings that warrant a follow-up task (not a fix in this branch), emit `task new` commands when the project uses `/managing-tasks` (i.e., `.tasks/` exists). Skip otherwise.
+For cross-cutting findings that warrant a follow-up task (not a fix in this branch), emit `task new` commands when the project uses `managing-tasks` (i.e., `.tasks/` exists). Skip otherwise.
 
 Template — one command per finding:
 
