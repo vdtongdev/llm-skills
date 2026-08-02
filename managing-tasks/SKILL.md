@@ -7,24 +7,6 @@ description: Project-local task tracker. Use when the user invokes `task ...`, w
 
 Tasks live as YAML files under `.tasks/<prefix>-<slug>.yaml`; mutations serialized via a project-wide file lock; ULID identity survives renumber and branch merges.
 
-## When to use
-
-- User invokes `task ...` or asks about task state
-- Any skill emits a task creation or query event
-- Resuming or ending a session in a project that has `.tasks/`
-
-## Decision graph
-
-Frequent commands:
-
-- task new / task get-new-uid
-- task list
-- task show <id> / why <id>
-- task next
-- task set-status / edit / `add-*` / `rm-*`
-- task archive / cancel / reopen / renumber
-- task verify / reindex / migrate
-
 ## CLI entrypoint
 
 Binary: `${skills_dir}/managing-tasks/bin/task` (Node shim). Projects alias to `task` in shells. (~/.claude/skills for claude, ~/.codex/skills for codex, etc.)
@@ -42,7 +24,7 @@ Read from project `CLAUDE.md` under a `/managing-tasks` block:
 - Tasks directory — default `.tasks/`
 - Archive policy — manual only (no auto-archive). Users run `task archive --older-than <days>` or `task archive --id <id>` explicitly.
 - TDD subtask kinds - freeform `kind:` label on subtasks (e.g., `RED`, `GREEN`). Tracker does not enforce.
-- Task kinds — freeform `kind:` label on the whole task (e.g., `coding`, `testing`, `docs`, `infra`). A **task-kinds table** in the project's `CLAUDE.md` maps each value to the skill to invoke and the antipatterns doc to load before working that task. Tracker stores the label but does not enforce it or read the table — the table is consumed by the agent (see "Proactive context loading" below). Recommended table shape:
+- Task kinds — freeform `kind:` label on the whole task (e.g., `coding`, `testing`, `docs`, `infra`). A **task-kinds table** in the project's `CLAUDE.md` maps each value to the skill to invoke and the antipatterns doc to load. The tracker stores the label and nothing else; the agent reads the table (see "Proactive context loading"). Recommended shape:
 
   ```
   ## Task kinds (/managing-tasks)
@@ -53,29 +35,27 @@ Read from project `CLAUDE.md` under a `/managing-tasks` block:
   | docs    | -               | context/STYLE.md                 |
   ```
 
-  Values are the project's own vocabulary — pick whatever kinds the project actually has. A task with no `kind`, or a `kind` absent from the table, just loads nothing extra.
+  Use the project's own vocabulary.
 
-- Task context - `context[]` on a task lists what to read or activate _beyond_ whatever the task's `kind` resolves to. `kind` carries the layer default, edited in one place; `context[]` carries this task's delta. An entry identical on every task of a layer belongs in the task-kinds table, not on the task. Nothing enforces that split; it is a review concern.
+- Task context - `context[]` lists what to read or activate _beyond_ what the task's `kind` resolves to. An entry identical on every task of a layer belongs in the task-kinds table, not on the task. Nothing enforces that split; check it at review.
 
 No config file is required; the CLI works with defaults.
 
 ## Proactive context loading
 
-Two fields answer "which skill/docs apply to this task?" so you never re-derive it per session. `kind` resolves the layer default; `context[]` carries this task's delta. Load both before touching code:
+`kind` resolves the layer default; `context[]` carries this task's delta. Load both before touching code:
 
 1. `kind` - look the value up in the project `CLAUDE.md` task-kinds table. Invoke the mapped skill and read the mapped doc.
 2. `context[]` - read or activate every entry (`kind: file | skill | doc`, `ref`, optional `why`). These are task-specific, so nothing else will supply them.
 3. Then start the task.
 
-Skip whichever is absent: no task-kinds table or no `kind` skips step 1, no `context[]` skips step 2. A task with neither loads nothing extra and proceeds as normal.
+Skip whichever is absent. A task with neither loads nothing extra.
 
-Run `task show <id>` before starting - it is the only command that emits both fields. `task next` appends ` kind:<domain>` and says nothing about `context[]`, so treat it as a pointer to the task, not as the full briefing.
-
-This is agent behavior; the tracker resolves neither field and invokes nothing itself.
+Run `task show <id>` before starting - it is the only command that emits both fields. `task next` appends ` kind:<domain>` and says nothing about `context[]`, so treat it as a pointer to the task, not the full briefing.
 
 ## Auto mode
 
-"Auto mode" is when the user asks you to work tasks back-to-back without pausing for direction between each one (e.g. "run the tasks", "auto mode", "keep going through the queue"). It is opt-in — never enter it unless the user asks. When asked:
+Working tasks back-to-back without pausing for direction between each one. Opt-in: enter it only when the user asks ("run the tasks", "auto mode", "keep going through the queue"). Then:
 
 1. `task next` (or `task list --ready`) to pick the next actionable task.
 2. `task show <id>`, then apply **Proactive context loading** above for that task's `kind` and `context[]`.
@@ -91,7 +71,7 @@ Stop the loop and hand back to the user when any of these hits:
 Auto mode does **not**:
 
 - Run `/reviewing-code` between tasks. Review is batch-end only, on the user's cadence (plan → break down → run → review), not per-task.
-- Try to self-detect "context running low" and stop or offboard on its own. It cannot reliably measure that. The user watches context and interrupts; that interrupt is the offboard trigger, same as any session.
+- Self-detect "context running low" and offboard on its own - it cannot measure that reliably. The user watches context and interrupts; that interrupt is the offboard trigger.
 
 ## Integration contract
 
@@ -111,7 +91,7 @@ Full per-command schemas: `references/integration-contract.md`.
 
 ## File format
 
-Every task file: `schema: 1` at top; `uid` (ULID, immutable), `id` (human-readable string), `title`, `status` required. Optional: `kind`, `depends_on`, `depends_on_uids`, `goal`, `files[]`, `tests[]`, `notes[]`, `subtasks[]`, `sources[]`, `context[]`. `kind` (freeform skill-domain label, e.g. `coding`, `testing`) and `context[]` (per-task reading list) together drive proactive context loading - see "Task kinds" and "Task context" under Project configuration. Filename prefix sets display order; ULID is identity. Full shape and rules: `references/file-format.md`.
+Every task file: `schema: 1` at top; `uid` (ULID, immutable), `id` (human-readable string), `title`, `status` required. Optional: `kind`, `depends_on`, `depends_on_uids`, `goal`, `files[]`, `tests[]`, `notes[]`, `subtasks[]`, `sources[]`, `context[]`. Filename prefix sets display order; ULID is identity. Full shape, rules and the id/prefix/uid allocation rules for direct writes: `references/file-format.md`.
 
 ## Invariants
 

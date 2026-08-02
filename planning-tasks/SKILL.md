@@ -7,15 +7,13 @@ description: Use when starting a complex feature (6+ steps), a multi-file change
 
 ## Overview
 
-Plan first, build second. The planning model does the thinking — researching the codebase, making design decisions, writing a detailed PRD, and creating tasks. The executing model (or a subagent) follows the plan without re-reading the codebase or inventing architecture.
-
-The plan must be detailed enough that the executor only needs the PRD and task list — not explore the codebase, not make design decisions, not re-read context docs.
+Plan first, build second. The planning model researches the codebase, settles design decisions, writes the PRD and creates the tasks. Write it so the executor needs nothing but the PRD and the task list — no codebase exploration, no design decisions, no context docs.
 
 ## Workflow
 
 ### 1. Clarify Scope with User
 
-Have a conversation. Understand what the user wants, what they don't want, and what's ambiguous. This is a discussion, not a survey — adapt to what the user shares.
+Understand what the user wants, what they don't want, and what's ambiguous. A discussion, not a survey.
 
 Things to explore naturally:
 
@@ -159,11 +157,9 @@ Sibling file: `context/prd-<feature>-decisions.md`. One entry per settled decisi
 - **Rationale** - why, in the present tense
 - **Status** - accepted | rejected | accepted-risk
 - **Scope** - where it applies
-- **Reopen only if** - the evidence that would justify revisiting it
+- **Reopen only if** - the evidence that would justify revisiting it. Name evidence, not "do not re-litigate"
 
-"Reopen only if" replaces a bare "do not re-litigate": a settled decision should be reopenable on new evidence, but not on a reviewer's fresh guess.
-
-5b receives the PRD plus this register, not the deliberation transcript. The register is what stops a reviewer re-raising settled findings; the transcript would anchor it on designs that no longer exist.
+Send 5b the PRD plus this register. Never the deliberation transcript - it anchors the reviewer on designs that no longer exist.
 
 ### 6. Create Tasks
 
@@ -179,8 +175,8 @@ Otherwise, write one task file per task into `.tasks/` from the PRD's Implementa
 - `tests` - required for any task that writes production code, unless its layer's convention is `tests-after` or `none` (see the TDD gate below). Otherwise, at least one of `tests` OR `notes` populated
 - **TDD shape** - blocking. See below
 - `sources` — ≥1 entry pointing back to the PRD (e.g., `kind: prd, ref: context/prd-X.md#section-name`)
-- `context` - optional. What an executor must read or activate *beyond* what the task's `kind` already resolves to: a file carrying a convention the task must follow, a skill the task needs invoked. Each entry is `kind` (`file`|`skill`|`doc`), `ref`, and a one-clause `why`. Anything that would be identical on every task of the same layer belongs in the project's task-kinds table instead - copying it here duplicates it in two places, where it then goes stale in one.
-- `kind` — optional but encouraged. Set the task's skill-domain (e.g. `coding`, `testing`, `docs`, `infra`) so the executing agent auto-loads the right skill/antipatterns per the project's `CLAUDE.md` task-kinds table. Pick the value from that table's vocabulary; for a task that both writes code and its tests, use the dominant domain (usually `coding` — the RED/GREEN split is already captured by `subtasks[].kind`). Omit `kind` if the project defines no task-kinds table. Do not confuse this task-level `kind` (domain) with `subtasks[].kind` (RED/GREEN phase).
+- `context` - optional. What the executor must read or activate *beyond* what the task's `kind` resolves to. Each entry is `kind` (`file`|`skill`|`doc`), `ref`, one-clause `why`. Anything identical on every task of the layer goes in the project's task-kinds table instead
+- `kind` — optional but encouraged. The task's skill-domain (`coding`, `testing`, `docs`, `infra`), taken from the project's task-kinds table vocabulary; omit if the project defines no table. For a task that writes both code and its tests, use the dominant domain (usually `coding`). Not to be confused with `subtasks[].kind` (RED/GREEN phase)
 
 **The TDD gate (blocking):**
 
@@ -218,7 +214,7 @@ Silence is not option (c). A production-code task with no subtasks, no `tests[]`
 
 - If task A creates a file task B references, B `depends_on: [A]`.
 - If task A's backend work must land before task B's frontend consumes it, B depends on A.
-- Under a `tdd` policy, tests come FIRST. Keep them as RED/GREEN subtasks inside one task, which order by position rather than by deps. Do not split the failing test into its own task that the coding task depends on: that task can never reach `completed`, because its test is meant to stay red until the next task lands.
+- Under a `tdd` policy, tests come FIRST. Keep them as RED/GREEN subtasks inside one task, which order by position rather than by deps. Do not split the failing test into its own task that the coding task depends on: that task can never reach `done`, because its test is meant to stay red until the next task lands.
 - Under `tests-after`, a separate test task may depend on the production task. Never under `tdd` - a test task depending on production code is test-after by construction.
 - No implicit "last-added-depends-on-previous" chain. Every dep is explicit and reason-backed.
 
@@ -226,9 +222,9 @@ Silence is not option (c). A production-code task with no subtasks, no `tests[]`
 
 Write one `.tasks/NNN-<slug>.yaml` file per task, directly. Full schema, envelope formats and the allocation rules for `id`, `NNN` and `uid`: `~/.claude/skills/managing-tasks/references/integration-contract.md` - that file is the contract and is authoritative. `references/managing-tasks-integration.md` carries only this skill's per-task quality checklist.
 
-Get real `uid` values from the CLI, never invented: `task get-new-uid --count <n>` returns `n` ULIDs. A hand-written `uid` breaks the merge procedure in `~/.claude/skills/managing-tasks/references/file-format.md`, which resolves duplicate-id conflicts by ULID timestamp order.
+Get `uid` values from `task get-new-uid --count <n>`. Never hand-write one.
 
-Resolve `depends_on` to real task ids as you write. There are no labels and no `label_map` - a dep is the id of a task that already exists or that this run is creating.
+Resolve `depends_on` to real task ids as you write: a dep is the id of a task that already exists or that this run is creating.
 
 Present the written tasks to the user for review - show the computed dep graph, plus a TDD compliance summary so a cheap exemption is conspicuous rather than buried. Derive it by counting the tasks you just wrote:
 
@@ -247,9 +243,9 @@ User may edit the files before you verify.
 **Planning is not done until `task verify` exits 0.** Run it after writing the files:
 
 - Exit 0: planning done.
-- Exit 4: the repo has problems. The output lists them by `kind` - `invalid` (a file violates the schema), `dangling-dep` (a `depends_on` names no task), `cycle` (the dep graph loops). Fix the files and re-run.
+- Exit 4: fix the files named in `problems[]` and re-run. Direct writes are not atomic, so fix forward - there is nothing to roll back.
 
-Writing files directly is not atomic: a run that fails partway leaves the tasks it already wrote. `verify` reports the resulting state, so fix forward from what it says rather than assuming a clean rollback. Per-exit-code handling is in the contract's § Producer-side patterns.
+Problem kinds and per-exit-code handling: the contract's § Producer-side patterns.
 
 Example TDD subtask split inside a task file:
 

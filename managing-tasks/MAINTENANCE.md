@@ -8,7 +8,7 @@
 | Task file field added / semantics changed | `references/file-format.md` | Per-field table |
 | Producer integration edge case | `references/integration-contract.md` | Per-command contract |
 | Exit code added / reclassified | `references/exit-codes.md` | Code table |
-| New invariant or decision graph update | `SKILL.md` | Invariants / Decision graph |
+| New invariant | `SKILL.md` | Invariants |
 | Cross-cutting workflow lesson | `SKILL.md` | Relevant section |
 | Human-facing setup, walkthrough, troubleshooting | `README.md` | Relevant section |
 | Recurring topic large enough to split | new `references/<topic>.md` | add row here |
