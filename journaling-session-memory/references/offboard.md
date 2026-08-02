@@ -1,73 +1,71 @@
-# Offboard - Wrapping Up a Session
+# Offboard - Finalize Handoff
 
-Follow these priorities in order when ending a session or when context is running low.
+Resolve `<state-dir>` from the project override or default in SKILL.md. Low-context rule: summarize recorded state; do not rediscover it. Read only the current session file and COMMON. Load a format reference only for a missing/legacy structure or a required COMMON write. Use targeted task commands when needed.
 
-**Constraints:** Near-full context, limited tool calls. Write from memory - do NOT read project files to gather information. The only files you may read: the current session's journal file and COMMON.md. If checkpointing was done during the session, most of the work is already on disk; offboard is a finalization pass, not a memory dump.
+## 1. Finish the Session Log
 
-Transcribe, don't judge. No compaction, no eviction, no doc rewrites - those need context, so they belong to onboard.
+Append only meaningful events missed since the last checkpoint. Do not reconstruct detailed history from project files.
 
----
+If no current session file exists, create one from `session-format.md`, then write the smallest accurate Log possible.
 
-## Priority 1 - Finalize the Session File (MUST)
+## 2. Capture Minimal Git State
 
-Non-negotiable. Every session ends with a finalized journal file. DO NOT spare tokens here - if the capsule is thin, the next session starts dumb.
-
-If no session file was created at onboard (skill invoked late), create it now from the SKILL.md template - next id, frontmatter, and write Milestones retroactively from memory before the capsule.
-
-1. **Milestones:** append any un-checkpointed events from this session. Do not reorder or reword existing lines.
-2. **Run git state.** The capsule's `head:` and Uncommitted Changes come from here, not from memory:
-
-   ```bash
-   bash ~/.claude/skills/journaling-session-memory/scripts/git-state.sh
-   ```
-
-3. **Handoff Capsule:** write every section from the SKILL.md template. Guidance:
-   - **Status:** one word - planning / implementing / testing / debugging / blocked
-   - **What's Done:** one line per file touched this session, backtick path + short phrase. Compress this file's `done:` milestones; do not re-derive from memory. This session only - prior sessions' work lives in their own files
-   - **Work Checklist:** only `[ ]` and `[-]` items. Be specific about partial progress: "PATCH done, DELETE not started", not "in progress"
-   - **What's Next:** ordered, specific enough that the next agent starts cold without guessing
-   - **Failed Approaches:** tracker projects - confirm each failure got a `task add-note` (add missing ones now) and leave the section out. No tracker - full entries here: what, what broke, WHY (root cause)
-   - **Open Questions (session-scoped):** what needs user input for this work
-   - **Uncommitted Changes:** from the git state above, not from memory - "All committed" / "Stashed as: session: <desc>" / the dirty state and why
-   - **Docs That Will Need Reading:** docs and skills the next agent must load before touching code. In a tracker project (see managing-tasks), the task already answers this: copy its `context[]` entries, and derive the rest from its `kind` via the project instructions task-kinds table. Add here only what neither field covers - if you find yourself adding much, the task's `context[]` is the better home for it
-   - **Docs That May Need Updating:** only docs you know went stale from this session's changes. Don't guess. Don't fix them now - naming them is the handoff
-   - **Retrieval Hints:** grep-able terms/paths/task-ids for when future work circles back here. Omit if nothing non-obvious
-4. **Frontmatter:** set `finalized: true`, `head:` to the short hash from the git state above, and verify `branch:`, `tasks:`, `topics:` are current.
-
-After this, the file is immutable forever.
-
----
-
-## Priority 2 - Append to COMMON.md (MUST, bounded)
-
-Append and tombstone only. Read it (allowed), then:
-
-1. **Topic Index:** match-first - reuse existing topic names, subsystem-level. Add this session's id to touched topics, update the one-phrase state and `[open]/[done]` tags. New topic only if genuinely new subsystem.
-2. **Promote project-scoped facts** from this session's milestones: new durable decisions -> Active Decisions with next anchor id (D-NN), the why, and `Evidence: <session id>`. New project-scoped open questions -> Open Questions (Q-NN). New conventions -> Constraints (C-NN). Task-scoped facts stay in task notes - do not promote them.
-3. **Supersede, don't delete:** a decision overturned this session gets its old entry reduced to a Tombstone line (`[superseded by D-NN]: <one phrase>. See <session id>`) and the new entry added.
-
-Do not count lines. Do not evict. Onboard Step 7 owns the budget; going over it here is expected.
-
----
-
-## Priority 3 - Sync Task Tracker Status (SHOULD)
-
-Skip entirely if `.tasks/` doesn't exist. Status transitions only:
+Run:
 
 ```bash
-task set-status <id> done|in-progress|blocked
-task edit-subtask <parent-id> <sub-id> --status done
+git branch --show-current
+git rev-parse --short HEAD
+git status --short
 ```
 
-No `add-note` - that is checkpoint's job, at the moment the fact was learned. Do not reconstruct missed ones from memory.
+Use branch, HEAD, and tree summary for frontmatter and Handoff. Do not query recent commits or stashes unless the session already depends on them.
 
-Critically low context: skip this entirely and note the gap in What's Next. Onboard Step 5 reads the tracker anyway.
+## 3. Write Handoff
 
----
+Use the current Handoff shape. Read `session-format.md` only when Handoff is missing, legacy, or ambiguous:
 
-## Priority 4 - Report
+- `Work`: one complete checklist; include finished, partial, pending, and stale-doc work.
+- `Next`: ordered cold-start actions only.
+- `Questions`: COMMON Q ids plus session-only blockers.
+- `State`: tree summary; exceptional context to load; failed approach only without tracker; non-obvious retrieval hints.
 
-No tool call - just text:
+Derive Handoff from Log and current knowledge. Do not reread project files.
 
-- 2-3 lines: what's done, what's next, anything needing user input
-- Brief - the user can read the capsule for details
+Set:
+
+- `finalized: true`
+- current `branch`
+- current short `head`
+- current task ids and topics
+
+This active conversation may append corrections and refresh Handoff after finalization. A later onboard always creates a successor. Never rewrite Log entries.
+
+## 4. Bounded COMMON Reconciliation
+
+Checkpoint should already own semantic reconciliation. At offboard:
+
+1. Update active Topics for this session; delete completed Topics without a live task or C/D/Q route.
+2. Run `wc -w` on the resolved COMMON path and compare it with the declared budget.
+3. Process only uncheckpointed project decisions, constraints, questions, retirements, or promotions still in memory, and only when the result remains below the hard ceiling.
+
+Do not perform a broad pruning investigation under low context. Whenever an entry is deferred because it would reach the hard ceiling:
+
+1. Append `pending-common:` to Log with the complete directive/question.
+2. For a question, use temporary Handoff text `pending COMMON Q: <question>`.
+3. Add this first Handoff work item:
+
+```markdown
+- [ ] `COMMON.md`: prune below hard ceiling; reconcile pending Log entries
+```
+
+The next onboard performs evidence-based pruning before normal work.
+
+## 5. Sync Tracker Status
+
+Skip without `.tasks/`. Apply known status transitions only. Do not reconstruct missing task notes at offboard.
+
+Critically low context: skip tracker sync and put the exact gap in Handoff Work.
+
+## 6. Report
+
+Tell the user what finished, the immediate next action, and any question requiring input. Keep it shorter than Handoff.
