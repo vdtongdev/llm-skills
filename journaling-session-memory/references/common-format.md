@@ -6,7 +6,7 @@ COMMON is the dense active project view loaded at every onboard. Keep current cr
 
 ```markdown
 ---
-budget_words: {target: 4000, hard: 6000}
+budget_words: { target: 2000, hard: 3500 }
 ---
 
 # Common Knowledge
