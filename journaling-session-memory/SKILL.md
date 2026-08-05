@@ -1,6 +1,6 @@
 ---
 name: journaling-session-memory
-description: Use when starting a session to resume previous work ("continue from last session", "pick up where we left off"), when ending a session ("wrap up", "let's stop", "end session"), when context is running low, or mid-session when a milestone happens (user decision made, approach abandoned, subtask finished) to checkpoint state. Also use when the user mentions session state, session handoff, or session continuity.
+description: Use when starting a session to resume previous work ("continue from last session", "pick up where we left off"), ending or handing off a session, checkpointing a milestone or low-context state, or trimming and compacting project session memory such as COMMON.md.
 ---
 
 # Journaling Session Memory
@@ -12,6 +12,7 @@ Preserve continuity without loading session history on every start. Session file
 - Resume or continue: read `references/onboard.md`.
 - Milestone, decision, discovery, abandonment, or task switch: read `references/checkpoint.md`.
 - Wrap up, end session, or low context: read `references/offboard.md`.
+- Trim, compact, prune, or reduce COMMON: read `references/compact-common.md`.
 - Creating/migrating a session file or resolving format ambiguity: read `references/session-format.md`.
 - Creating/migrating COMMON or changing C/D/Q entries: read `references/common-format.md`.
 
@@ -53,8 +54,9 @@ Session ids are zero-padded sequence numbers; the next session takes highest id 
 ## Core Invariants
 
 - Checkpoint while facts are fresh; offboard summarizes, never reconstructs.
-- When work touches a COMMON subject or `RECHECK` event, classify the entry KEEP / REPLACE / RETIRE / PROMOTE before continuing.
+- When work touches a COMMON subject or `RECHECK` event, classify the entry KEEP / CONDENSE / REPLACE / RETIRE / PROMOTE before continuing.
 - COMMON is an active view, not history. Delete obsolete entries; keep redirects only for live inbound references.
+- COMMON compaction is intentionally lossy. Retain only information worth recurring context cost; recover supporting evidence from session Logs before semantic removal.
 - Preserve identifiers, conditions, exceptions, and provenance when compressing.
 - Never persist secrets, credentials, or private user data; reference their location.
 - Never rewrite session Log entries. Apply the correction window in `references/session-format.md`.

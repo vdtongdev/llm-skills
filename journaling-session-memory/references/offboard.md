@@ -36,7 +36,7 @@ Set:
 - `finalized: true`
 - current `branch`
 - current short `head`
-- current task ids and topics
+- current task ids and every topic code touched by the session
 
 This active conversation may append corrections and refresh Handoff after finalization. A later onboard always creates a successor. Never rewrite Log entries.
 
@@ -44,7 +44,7 @@ This active conversation may append corrections and refresh Handoff after finali
 
 Checkpoint should already own semantic reconciliation. At offboard:
 
-1. Update active Topics for this session; delete completed Topics without a live task or C/D/Q route.
+1. Ensure active Topic definitions have stable codes and short scope/search descriptions; never add session ids or current status. Delete inactive definitions without a live task or C/D/Q route; keep historical session tags unchanged.
 2. Run `wc -w` on the resolved COMMON path and compare it with the declared budget.
 3. Process only uncheckpointed project decisions, constraints, questions, retirements, or promotions still in memory, and only when the result remains below the hard ceiling.
 

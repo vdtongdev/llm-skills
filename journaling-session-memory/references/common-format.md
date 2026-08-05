@@ -2,6 +2,12 @@
 
 COMMON is the dense active project view loaded at every onboard. Keep current cross-cutting directives and retrieval routes only. Session files retain history and rationale.
 
+## Contents
+
+- [Template and dense syntax](#template)
+- [Anchors and section rules](#anchors)
+- [Entry lifecycle](#entry-lifecycle)
+
 ## Template
 
 ```markdown
@@ -56,7 +62,13 @@ Authoritative facts only. Move reusable failure patterns only to an antipattern 
 
 ### Decisions
 
-Directive and operational boundaries only. No justification or `user ruling` label. Temporary workarounds and version-sensitive choices name concrete `RECHECK` events.
+Directive and operational boundaries only. No justification or `user ruling` label.
+
+- Temporary directive: name a concrete `RECHECK` event.
+- Durable guardrail: keep only when non-obvious, cross-cutting, and likely to prevent a plausible wrong action.
+- Settled implementation: retire when current artifacts make the behavior discoverable.
+
+Decision durability does not imply permanent COMMON residency.
 
 ### Questions
 
@@ -78,21 +90,24 @@ Keep a redirect only while a live document references the retired anchor. Histor
 Active cross-session retrieval routes only:
 
 ```markdown
-- auth (T-12): 0069, 0070; refresh revocation
+- auth: OIDC, Authentik, accounts, credentials, and session lifecycle
 ```
 
-- Topic names are subsystems, not features.
-- Keep only sessions useful to current work.
-- Delete closed/done topics unless an active C/D/Q or task still needs the route.
-- Recreate a pruned topic through targeted archive search if work returns.
+- Topic codes are stable, human-readable subsystem names, not features.
+- Descriptions define scope and useful archive-search vocabulary, not current status.
+- Session frontmatter owns the forward index through `topics: [auth, ...]`.
+- Never list session ids in COMMON Topics; grep the code across session frontmatter to retrieve matching sessions.
+- Delete inactive Topic definitions unless an active C/D/Q or task still needs the route.
+- Finalized session tags remain valid after a Topic definition is pruned. Recreate the definition through targeted archive search if work returns.
 
 ## Entry Lifecycle
 
 When work triggers `RECHECK` or touches an entry's subject, classify it at checkpoint:
 
 - `KEEP`: directive still binds; no write.
+- `CONDENSE`: rewrite the same anchor without changing meaning; no Log entry.
 - `REPLACE`: allocate replacement anchor; record session event; remove old entry unless a redirect is required.
-- `RETIRE`: record invalidation evidence in session Log; delete entry.
+- `RETIRE`: record why the entry no longer deserves active recall; delete when invalid, completed, local, self-evident, no longer cross-cutting, or unlikely to change future action.
 - `PROMOTE`: update a permanent document loaded for every supported host; record session event; delete entry. Verify loading through shared project instructions or task `kind`/`context[]`; if ambiguous, KEEP.
 
-Do not say content was "demoted to a session." Its source evidence already lives there; the current session records retirement.
+Promotion is not required before retirement. Do not say content was "demoted to a session." Its source evidence already lives there; the current session records retirement.

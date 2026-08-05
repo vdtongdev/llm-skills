@@ -24,8 +24,9 @@ topics: [dependencies]
 - discovered: <fact and consequence>
 - abandoned: <approach> - <failure> (root cause: <cause>)
 - done: `<path>` - <result>
-- retired: D-02 - <invalidation evidence>
+- retired: D-02 - <why active recall no longer earns its context cost>
 - promoted: C-71 -> `context/ANTIPATTERNS_WORKFLOW.md`
+- split: C-19 keeps <primary subject>; C-72 adds <other surviving subject>; <retired clause and reason>
 - question: <unresolved project question; pending COMMON anchor when necessary>
 - pending-common: <constraint/decision/question not yet added and why>
 - correction: <session/entry> wrong; <correct fact>
@@ -68,12 +69,13 @@ Omit empty optional lines and sections. Keep `Work`, `Next`, and `State`; write 
 - `branch`: branch at creation; refresh at offboard.
 - `head`: short commit hash at offboard; empty while live.
 - `tasks`: active tracker ids only.
-- `topics`: reuse COMMON topic names; subsystem names, not feature names.
+- `topics`: every stable subsystem code touched by the session, including codes whose COMMON definition was later pruned. Use human-readable codes, not feature names; never rename an assigned code.
+- Legacy Topic migration may mechanically add an existing stable code to finalized session frontmatter named by the old inverted index. Record the migration in the active session; never edit historical Logs or Handoffs.
 
 ## Log
 
 - Append events while context is fresh. Never reorder or rewrite existing log entries.
-- Preserve rationale, rejected alternatives, and invalidation evidence here. COMMON keeps only current directives.
+- Preserve rationale, rejected alternatives, invalidation evidence, and active-view retirement reasons here. COMMON keeps only current directives.
 - Task-scoped discoveries also go to the task note when `.tasks/` exists.
 - `retired`, `promoted`, and `correction` entries preserve history removed from COMMON.
 - `pending-common` preserves a project entry deferred by the hard word ceiling; Handoff Work must point to it.
@@ -89,4 +91,8 @@ Omit empty optional lines and sections. Keep `Work`, `Next`, and `State`; write 
 
 ## Correction Window
 
-Only the active conversation that finalized the file may append `correction:` and refresh Handoff/frontmatter afterward. Any invocation entering through onboard creates a successor and records corrections there, even when no successor exists yet. Never rewrite Log entries.
+Only the active conversation that finalized the file may append `correction:` and refresh Handoff/frontmatter afterward. Any invocation entering through onboard creates a successor and records corrections there, even when no successor exists yet.
+
+One mechanical exception exists: `compact-common.md` legacy Topic migration may add stable topic codes to named finalized sessions' frontmatter. Change no other frontmatter field and never edit their Logs or Handoffs. Record every backfill in the active successor.
+
+Never rewrite Log entries.

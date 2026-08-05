@@ -48,18 +48,23 @@ Derive touch keys from the event:
 Search COMMON for those keys, then include any C/D/Q whose subject is affected without a literal match. Do not audit unrelated entries. Read `common-format.md` before changing COMMON or when classification is unclear. For every affected entry, choose:
 
 - `KEEP`: still binds; no write.
+- `CONDENSE`: same meaning with less text; rewrite the existing anchor and add no Log entry.
 - `REPLACE`: allocate a new anchor, append replacement evidence to Log, remove old entry, add Redirect only for a live inbound reference.
-- `RETIRE`: append invalidation evidence to Log, then delete entry.
+- `RETIRE`: append why the entry no longer deserves active recall, then delete it. Valid reasons include invalid, completed, local, self-evident, no longer cross-cutting, or unlikely to change future action.
 - `PROMOTE`: update a permanent document loaded for every supported host, append promotion to Log, then delete entry. If loading is ambiguous, KEEP.
 
 Never leave an affected entry unclassified.
+
+Fresh evidence from the current event is sufficient for invalidation or completion. Before retiring a still-true entry as local, self-evident, no longer cross-cutting, or unlikely to affect future action, read `compact-common.md` § Investigate Before Classifying and perform its targeted retrieval. This is semantic reconciliation, not a full budget pass.
 
 Also reconcile hot project state:
 
 - New cross-cutting constraint or decision: allocate C/D anchor and add compact current directive.
 - New unresolved project question: allocate Q anchor; reference that Q in Handoff later.
 - Resolved Q: append resolution evidence to Log, delete Q, add D only if a continuing directive remains.
-- Completed topic: delete it unless an active task or C/D/Q still needs its archive route.
+- Add every subsystem touched this session to its frontmatter `topics:` list; never remove an earlier session tag.
+- Active topic without a COMMON definition: add its stable code and a short scope/search description, without session ids or current status.
+- Inactive topic: delete its COMMON definition unless an active task or C/D/Q still needs the route. Historical session tags remain searchable.
 
 Do not run the full word-budget pruning pass here.
 
