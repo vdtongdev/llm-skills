@@ -10,7 +10,7 @@ Every line must change agent behavior. If it doesn't, cut it.
 ## Process
 
 1. **Read target file first** — check existing content, format, structure
-2. **Check for project-level style override** — project CLAUDE.md or project-specific writing guide takes precedence
+2. **Check for project-level style override** — project instructions or a project-specific writing guide take precedence
 3. **Write** — follow `references/style-guide.md`
 4. **Pre-save checklist** — run `references/style-guide.md` § Quick Checklist
 

@@ -7,7 +7,7 @@ description: Use whenever test-related work is in play — writing new tests, de
 
 ## Load Project Config
 
-Check for a `/testing-code` section in the project's CLAUDE.md `SKILL CONFIGURATION`. It should specify:
+Check for a `testing-code` section in the project instructions under `SKILL CONFIGURATION`. It should specify:
 
 - **Testing doc** — project commands, file paths, fixtures, domain invariants
 - **Backend inventory** — tracks existing backend tests
@@ -186,9 +186,9 @@ If no testing doc or inventory exists:
    - What fixtures or helpers already exist?
 3. Fill in the template, save to `context/TESTING.md`
 4. Create inventory files from `references/templates/TEST_INVENTORY-template.md`
-5. Add to CLAUDE.md `SKILL CONFIGURATION`:
+5. Add to the project instructions under `SKILL CONFIGURATION`:
    ```
-   **`/testing-code`:**
+   **`testing-code`:**
    - Testing doc: `context/TESTING.md`
    - Backend inventory: `context/TEST_INVENTORY_BACKEND.md`
    - Frontend inventory: `context/TEST_INVENTORY_FRONTEND.md`

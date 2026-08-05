@@ -21,7 +21,7 @@ an executor who has zero codebase context beyond the PRD itself.
 | File Paths | All paths are project-relative, none say "the file" or "the test" |
 | Interfaces | New functions have signatures with types, not just names |
 | Test Cases | Tests are enumerated with inputs/outputs, not "add appropriate tests" |
-| Dependencies | Tasks can be executed in order without asking "what first?" |
+| Dependencies | `Execution Order` present and numbered; tasks executable in that order without asking "what first?"; load-bearing ordering carries its reason |
 
 ## Calibration
 
@@ -47,13 +47,7 @@ steps, placeholder content, or tasks so vague they can't be acted on.
 
 ## Usage
 
-```python
-Agent({
-  subagent_type: "general-purpose",
-  model: "sonnet",
-  prompt: "<the prompt above with PRD_FILE_PATH filled in>"
-})
-```
+Dispatch the prompt above through the active host's native read-only subagent mechanism. Substitute the exact project-relative PRD path before dispatch.
 
 If issues are found, fix them in the PRD and re-dispatch the reviewer.
 Max 3 iterations — if still failing, surface to user for guidance.

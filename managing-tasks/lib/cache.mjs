@@ -48,6 +48,7 @@ export async function scanTasks(cwd, { includeArchived = false } = {}) {
           notes: parsed.notes,
           subtasks: parsed.subtasks,
           sources: parsed.sources,
+          context: parsed.context,
           prefix,
           file: name,
           archived,

@@ -45,6 +45,7 @@ export function renderShow(t) {
     notes: t.notes,
     subtasks: t.subtasks,
     sources: t.sources,
+    context: t.context,
     archived: !!t.archived,
   };
   return YAML.stringify(obj);

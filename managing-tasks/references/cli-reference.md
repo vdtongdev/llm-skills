@@ -33,26 +33,22 @@ Flags:
 - `--kind <domain>` — freeform skill-domain label for the task (e.g. `coding`, `testing`, `docs`). Optional; not enforced. See `file-format.md` § Field reference.
 - `--file <path>:<kind>` — repeatable. `kind` ∈ {`create`, `modify`, `delete`}; omitted kind defaults to `modify`.
 - `--depends-on <id>` — repeatable. ID must exist and must not be cancelled (exit 2 / exit 4).
-- `--source '<kind=..,ref=..,meta.X=..>'` — repeatable. Single-string format; quote `ref` value with `"..."` if it contains a comma. `kind` and `ref` required; arbitrary `meta.<key>=<val>` pairs folded into `meta: {}`.
+- `--source '<kind=..,ref=..,meta.X=..>'` — repeatable. Envelope format: `integration-contract.md` § Source and context envelope format.
+- `--context '<kind=..,ref=..,why=..>'` - repeatable. Same envelope; `why` optional, and unlike `--source` a stray key is exit 3. See the same section.
 
 Allocates: next numeric `id` (max existing + 1), new ULID `uid`, next filename prefix (10-gap).
 
 Output: `{contract_version: 1, id, uid, file}`.
 
-### `task import <batch.yaml>`
+### `task get-new-uid [--count <n>]`
 
-Atomic batch create. See `integration-contract.md` § Batch import for the YAML shape.
+Mint ULIDs for an agent writing task files directly. Reads and writes no state: no lock, and `.tasks/` need not exist.
 
-Semantics:
-1. Parse + schema-validate batch (exit 3 on malformed; exit 4 on label cycle).
-2. Acquire lock (60s timeout — maintenance tier).
-3. Verify external `depends_on` IDs exist and are not cancelled (exit 2 / exit 4).
-4. Allocate sequential IDs + ULIDs + prefixes.
-5. Resolve `depends_on_labels` → resolved IDs. Unknown label → exit 3.
-6. Stage all writes; atomically write each. Any write failure → roll back all written files.
-7. Rebuild cache.
+- `--count <n>` - positive integer, default 1. A bare `--count` with no value is exit 3, not a silent 1.
 
-Output: `{contract_version: 1, label_map: {<label>: <id>}, created: <n>}`.
+Output: `{contract_version: 1, uids: [<ulid>, ...]}`, sorted ascending.
+
+Never hand-write a `uid`. `file-format.md` § Merge conflicts resolves duplicate ids by ULID timestamp order, so an invented uid corrupts that procedure.
 
 ## Query
 
@@ -152,6 +148,11 @@ Overwrites title, goal, and/or kind. Each flag is applied only when present; the
 - `task add-source <id> --source '<kind=..,ref=..>'` — same format as `task new --source`.
 - `task rm-source <id> <ref>` — removes entries matching `ref`.
 
+### Context
+
+- `task add-context <id> --kind <k> --ref <r> [--why <w>]` - appends to `context[]`. Flags here, not the `--source` envelope, because there is no `meta` to fold.
+- `task rm-context <id> <ref>` - removes the entry matching `ref`. Positional, mirroring `rm-source`. Removing an absent ref is exit 2, not a silent no-op.
+
 ### Ordering
 
 - `task move <id> --after <other>` — places `<id>` one prefix after `<other>`. If next adjacent prefix is within 1 of `<other>.prefix`, exit 4 with message `no prefix gap between X and Y; run 'task renumber'`.
@@ -161,6 +162,7 @@ Overwrites title, goal, and/or kind. Each flag is applied only when present; the
 - `task rm <id> [--force]` — delete file. Exit 4 if any task depends on `<id>` and `--force` absent.
 - `task cancel <id> [--force]` — sets status=cancelled. Exit 4 if any active dependent exists and `--force` absent.
 - `task reopen <id>` — sets status=pending (no guards).
+
 
 ## Lifecycle
 
@@ -173,6 +175,25 @@ Moves file(s) to `.tasks/archived/`. Refuses (exit 4) any target referenced by a
 `--older-than <days>`: selects `done` tasks with `mtime < now - days*86400s`.
 
 Output: `{contract_version: 1, archived: [<ids>]}`.
+
+### `task verify`
+
+Repo-wide integrity check. Reports, never repairs - that is why it is separate from `reindex`. Takes no lock; reads `.tasks/` and `.tasks/archived/`.
+
+Reported problem kinds:
+
+| `kind` | Meaning | Fields |
+|---|---|---|
+| `invalid` | File violates the schema | `file`, `detail` |
+| `duplicate-id` | Two or more files claim one `id` | `id`, `files[]` |
+| `dangling-dep` | A `depends_on` names no existing task | `id`, `file`, `ref` |
+| `cycle` | The dependency graph loops | `ids[]` |
+
+Every problem in the repo is reported in one run. Archived tasks resolve dep targets but are not walked for cycles.
+
+Output: `{contract_version: 1, ok: <bool>, checked: <count>, problems: [...]}`.
+
+Exit 0 when `problems` is empty, otherwise exit 4. The code is a verdict on the repo, not on argv, which is why a schema-invalid file here is 4 and not the 3 it would be from `task new`.
 
 ### `task reindex`
 

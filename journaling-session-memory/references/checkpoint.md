@@ -1,42 +1,68 @@
-# Checkpoint - Mid-Session Milestones
+# Checkpoint - Record Hot State
 
-The current session's journal file is a write-ahead log. State is written when it's hot and cheap, not reconstructed at offboard when context is exhausted. A crashed session loses only the tail since the last checkpoint.
+Checkpoint when context is accurate and cheap. A crash should lose only work since the last meaningful event.
 
 ## Triggers
 
-Checkpoint when any of these happens:
+- User decision or correction
+- New constraint, failure mode, or project fact
+- Abandoned approach
+- Completed subtask or meaningful file group
+- Task or subsystem switch
+- Dependency, tool, configuration, migration, or workaround change
+- Before risky work
+- Low context: use `offboard.md` instead
 
-- **User makes a decision** that affects implementation (architecture, preference, scope)
-- **An approach is abandoned** - record the root cause NOW, while it's fresh; this is the single highest-value thing to preserve
-- **A meaningful milestone lands** - subtask done, tests passing, a file completed
-- **The task switches** - update `tasks:`/`topics:` frontmatter along with the milestone line
-- **Before a risky operation** (big refactor, destructive command, dependency upgrade)
-- **A low-context warning appears** - do a full offboard instead (references/offboard.md)
+## 1. Append Session Log
 
-## What to Write
+Append 1-5 typed entries to the current session Log. Read `session-format.md` only when creating the file or resolving format ambiguity.
 
-A checkpoint is 1-5 lines appended to the current session file's Milestones. Prefix with the kind:
-
+```markdown
+- decision: <ruling and rationale>
+- discovered: <fact and consequence>
+- abandoned: <approach> - <failure> (root cause: <cause>)
+- done: `<path>` - <result>
+- correction: <old claim> wrong; <correct fact>
 ```
-- decision: <what was decided and why, attribute user calls to the user>
-- abandoned: <approach> - <what broke> (root cause: <why>)
-- done: `path/to/file` - <what>
-- switched: <from -> to, why>
-- note: <constraint or discovery worth surviving a crash>
-```
 
-Task-scoped facts go to the tracker at the same moment, not just the journal:
+Never reorder or rewrite earlier Log entries.
 
-- Failed approach or discovered constraint for task X, and `.tasks/` exists: `task add-note <id> "<the fact, with root cause>"` plus the one-line milestone
-- Subtask finished: `task edit-subtask <parent-id> <sub-id> --status done`
+## 2. Update Task-Owned State
 
-## What NOT to Do
+Skip without `.tasks/`.
 
-- Do NOT touch COMMON.md at checkpoints - promotion happens once, at offboard. One edit site, not many.
-- Do NOT edit or reword earlier milestone lines - append-only, corrections go in the Corrections section.
-- Do NOT write the Handoff Capsule mid-session - that's offboard's finalization pass.
-- Do NOT narrate routine work ("read file X", "ran tests") - milestones are for state the next agent couldn't cheaply rediscover.
+- Task-scoped discovery or failure: `task add-note <id> "<fact and root cause>"`.
+- Finished subtask: `task edit-subtask <parent> <subtask> --status done`.
+- Do not copy task status into COMMON.
 
-## Cost Discipline
+## 3. Reconcile COMMON
 
-A checkpoint should cost seconds, not minutes: append a few lines, optionally one tracker command, back to work. If a checkpoint is turning into a paragraph, write the one-line version in the milestone and put the paragraph in a task note.
+Derive touch keys from the event:
+
+- changed paths and symbols;
+- package, tool, service, or command names;
+- issue and task ids;
+- workaround, migration, or configuration names;
+- explicit `RECHECK` event.
+
+Search COMMON for those keys, then include any C/D/Q whose subject is affected without a literal match. Do not audit unrelated entries. Read `common-format.md` before changing COMMON or when classification is unclear. For every affected entry, choose:
+
+- `KEEP`: still binds; no write.
+- `REPLACE`: allocate a new anchor, append replacement evidence to Log, remove old entry, add Redirect only for a live inbound reference.
+- `RETIRE`: append invalidation evidence to Log, then delete entry.
+- `PROMOTE`: update a permanent document loaded for every supported host, append promotion to Log, then delete entry. If loading is ambiguous, KEEP.
+
+Never leave an affected entry unclassified.
+
+Also reconcile hot project state:
+
+- New cross-cutting constraint or decision: allocate C/D anchor and add compact current directive.
+- New unresolved project question: allocate Q anchor; reference that Q in Handoff later.
+- Resolved Q: append resolution evidence to Log, delete Q, add D only if a continuing directive remains.
+- Completed topic: delete it unless an active task or C/D/Q still needs its archive route.
+
+Do not run the full word-budget pruning pass here.
+
+## 4. Stop
+
+Do not write Handoff mid-session. Return to the active task.

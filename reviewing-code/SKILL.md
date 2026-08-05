@@ -7,17 +7,17 @@ description: Multi-pass code review of a branch before merge. Use when the user 
 
 Multi-pass review of a branch's changes. Reads files fully, checks against project antipatterns, produces structured findings with severity. Does not fix — that's a separate task.
 
-May span multiple sessions. Hand off via `/preserving-session-memory`.
+May span multiple sessions. Hand off via `journaling-session-memory`.
 
 ## Project Configuration
 
-Project's CLAUDE.md may specify:
+Project instructions may specify:
 
 - **Base branch** — if unset, infer from `git branch -a`. Common conventions: `master → dev → feature`, or `main → feature`. Pick the obvious upstream; ask the user only if multiple plausible bases exist.
 - **Antipattern docs** — paths to project antipattern files. If none, skip the antipattern cross-reference step
 - **Stack-conditional passes** — e.g., skip Pass 4 if no frontend exists
 
-Read these from CLAUDE.md before Setup.
+Read these from the project instructions before Setup.
 
 ## Setup
 
@@ -36,7 +36,7 @@ Read these from CLAUDE.md before Setup.
 
    For these, inspect the source/config that produced them if relevant (e.g., `pyproject.toml` change behind a `uv.lock` diff), not the artifact itself.
 
-3. Build a **review checklist** — one `[ ]` per changed file, grouped by pass. Write to SESSION_STATE immediately (via `/preserving-session-memory`). Example:
+3. Build a **review checklist** — one `[ ]` per changed file, grouped by pass. Write it to the current session journal file immediately (via `journaling-session-memory`, checkpoint mode). Example:
 
    ```
    ## Review Checklist
@@ -156,7 +156,7 @@ Also check:
 
 ### Follow-up findings → task tracker
 
-For cross-cutting findings that warrant a follow-up task (not a fix in this branch), emit `task new` commands when the project uses `/managing-tasks` (i.e., `.tasks/` exists). Skip otherwise.
+For cross-cutting findings that warrant a follow-up task (not a fix in this branch), emit `task new` commands when the project uses `managing-tasks` (i.e., `.tasks/` exists). Skip otherwise.
 
 Template — one command per finding:
 
@@ -190,16 +190,18 @@ See `references/finding-template.md` for the per-finding format, summary table, 
 
 ## Multi-Session Handoff
 
-When a review spans sessions, SESSION_STATE must include:
+When a review spans sessions, the session file's Handoff Capsule must include:
 
 1. **Review Checklist** — with `[x]` marks
 2. **Findings so far** — full text, not abbreviated
 3. **Current pass** — which pass is in progress
 4. **Dependency notes** — cross-cutting items flagged for Pass 6
 
-Next session resumes from the checklist — do not re-run `git diff` or re-read completed files **unless** Pass 6 dependency tracing requires reopening an earlier file, or SESSION_STATE is suspect.
+Findings are evidence, not narrative: append each one to Milestones as it is found, so an unclean shutdown does not lose it. The capsule is the resume surface.
 
-**On resume, validate SESSION_STATE first.** If the Review Checklist is missing, the listed files don't match current `git diff`, or the recorded branch differs from `HEAD`, stop and rebuild from Setup instead of resuming.
+Next session resumes from the checklist — do not re-run `git diff` or re-read completed files **unless** Pass 6 dependency tracing requires reopening an earlier file, or the capsule is suspect.
+
+**On resume, validate the capsule first.** If the Review Checklist is missing, the listed files don't match current `git diff`, or the session file's `branch:`/`head:` frontmatter differs from `HEAD`, stop and rebuild from Setup instead of resuming.
 
 ## Rules
 

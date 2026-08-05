@@ -6,9 +6,9 @@ Canonical contract. Every command respects this table. Tests assert against it.
 |---|---|---|---|
 | `0` | success | Command succeeded. May emit `warnings: [...]` in output. | any ok path |
 | `1` | internal | Crash, unexpected IO failure, or malformed task file hit outside `list` | ENOENT on state dir, JSON/YAML parser crash outside list path |
-| `2` | not-found | ID, path, or external dep target missing | `task show nonexistent`, `task add-dep 7 999`, `task import` with missing external dep |
-| `3` | bad-input | Bad CLI args, malformed YAML import input, schema violation (missing required field, wrong type, float ID, duplicate label) | `task new` without title, batch with `id: 2.1` bare, unknown status name |
-| `4` | domain-violation | Constraint violation at the domain level | cycle, self-dep, done-with-open-subtasks, dep-on-cancelled, prefix-gap-exhausted, cancel-with-active-dependents, archive-of-referenced-task, retroactive-done-invalidation |
+| `2` | not-found | ID, path, or external dep target missing | `task show nonexistent`, `task add-dep 7 999`, `task rm-context` on an absent ref |
+| `3` | bad-input | Bad CLI args, or a schema violation reached through a command's own input (missing required field, wrong type, float ID) | `task new` without title, unknown status name, `task get-new-uid --count 0` |
+| `4` | domain-violation | Constraint violation at the domain level | cycle, self-dep, done-with-open-subtasks, dep-on-cancelled, prefix-gap-exhausted, cancel-with-active-dependents, archive-of-referenced-task, retroactive-done-invalidation, any `task verify` problem |
 | `5` | lock | Lock acquisition timeout | contention > 5s (short) or > 60s (maintenance) |
 | `6` | schema-unsupported | Task file schema version outside supported range | file with `schema: 2` and CLI only supports 1; points user to `task migrate` |
 
@@ -17,7 +17,6 @@ Canonical contract. Every command respects this table. Tests assert against it.
 - **"Not found" vs "bad-input"**: missing reference to an existing resource → 2. Malformed input that never resolves to a lookup → 3.
 - **"Bad-input" vs "domain"**: schema/syntax violation → 3. Valid input that violates a rule → 4.
   - Example: `task new --depends-on 7` with `id: 7` cancelled → 4 (input well-formed, semantics violated).
-  - Example: batch with duplicate labels → 3 (structural violation, detected during parse).
 - **"Internal" is a last resort**: exit 1 means the CLI bugged out or the environment failed. Domain errors never fall back to 1.
 
 ## Per-command notes
@@ -25,6 +24,10 @@ Canonical contract. Every command respects this table. Tests assert against it.
 ### `task list`
 
 Unique behavior: tolerates malformed files per-row. A malformed task surfaces as `[?] INVALID  <filename>: <error>`; overall exit is still 0. Every other command hitting a malformed file exits 1.
+
+### `task verify`
+
+Exit 4 means the repo has problems, not that the invocation was wrong. A schema-invalid file is reported here as exit 4 even though the same violation from `task new` is exit 3: the code classifies the verdict, and the caller passed no input to get wrong.
 
 ### `task archive`
 

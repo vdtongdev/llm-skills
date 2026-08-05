@@ -239,6 +239,31 @@ export async function cmdRmSource(cwd, args) {
   });
 }
 
+/** Append a context entry: what to read or activate before working this task, beyond the kind default. */
+export async function cmdAddContext(cwd, args) {
+  const [id] = args._;
+  if (!id || !args.kind || !args.ref) {
+    throw new ValidationError("task add-context <id> --kind <k> --ref <r> [--why <w>]");
+  }
+  const entry = { kind: String(args.kind), ref: String(args.ref) };
+  if (args.why != null && args.why !== true) entry.why = String(args.why);
+  return mutate(cwd, id, (data) => {
+    data.context = [...(data.context || []), entry];
+  });
+}
+
+/** Remove a context entry by ref. Positional, mirroring rm-source. Absent ref is exit 2. */
+export async function cmdRmContext(cwd, args) {
+  const [id, ref] = args._;
+  if (!id || !ref) throw new ValidationError("task rm-context <id> <ref>");
+  return mutate(cwd, id, (data) => {
+    const before = (data.context || []).length;
+    data.context = (data.context || []).filter((c) => c.ref !== ref);
+    if (data.context.length === before) throw new ValidationError(`context ref ${ref} not found on task ${id}`, 2);
+    if (!data.context.length) delete data.context;
+  });
+}
+
 /**
  * Reorder a task by inserting it directly after another task (--after <id>).
  * Fails if there's no prefix gap between the anchor and its next task; run 'task renumber' first.
@@ -359,7 +384,11 @@ async function mutate(cwd, id, transform) {
 }
 
 /** Iterative DFS cycle check: returns true if start is reachable from itself via graph edges. */
-function hasCycle(graph, start) {
+/**
+ * True if `start` is reachable from itself in `graph` (Map<id, Set<id>>).
+ * Exported for `task verify`, which runs it from every node for a repo-wide check.
+ */
+export function hasCycle(graph, start) {
   const stack = [start];
   const visited = new Set();
   while (stack.length) {

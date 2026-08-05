@@ -1,6 +1,6 @@
 # Quality Standards for Skill Knowledge
 
-> Generic condensation and quality rules. Applied by `/maintaining-skills` regardless of target skill.
+> Generic condensation and quality rules. Applied by maintaining-skills regardless of target skill.
 
 ## Condensation Pipeline
 

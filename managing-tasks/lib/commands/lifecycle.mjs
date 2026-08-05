@@ -5,7 +5,8 @@ import { join } from "node:path";
 import YAML from "yaml";
 import { atomicWrite, withLock, MAINTENANCE_TIMEOUT_MS } from "../storage.mjs";
 import { scanTasks, writeCache, rebuildCache, taskFilePath, TASKS_DIR, ARCHIVE_DIR } from "../cache.mjs";
-import { ValidationError, TERMINAL, SCHEMA_VERSION } from "../schema.mjs";
+import { ValidationError, TERMINAL, SCHEMA_VERSION, EXIT } from "../schema.mjs";
+import { hasCycle } from "./mutate.mjs";
 
 /**
  * Move done tasks to .tasks/archived/.
@@ -56,6 +57,77 @@ export async function cmdReindex(cwd) {
     const tasks = await rebuildCache(cwd);
     return { contract_version: 1, indexed: tasks.length };
   });
+}
+
+/**
+ * Repo-wide integrity check. Reports, never repairs - that is why it is its own verb
+ * and not part of `reindex`.
+ *
+ * Checks: schema-invalid task files, `depends_on` targets that resolve to nothing,
+ * and dependency cycles. Archived tasks count as resolvable dep targets but are not
+ * themselves walked for cycles.
+ *
+ * Every problem in the repo is reported in one run; the exit code is a verdict on the
+ * repo, not on argv, so any problem is exit 4 (domain violation) rather than 3.
+ * @returns {{ contract_version: 1, ok: boolean, checked: number, problems: object[] }}
+ */
+export async function cmdVerify(cwd) {
+  const all = await scanTasks(cwd, { includeArchived: true });
+  const problems = [];
+
+  for (const t of all.filter((x) => x.status === "invalid")) {
+    problems.push({ kind: "invalid", file: t.file, detail: t.error });
+  }
+
+  const valid = all.filter((t) => t.status !== "invalid");
+  const known = new Set(valid.map((t) => t.id));
+  const live = valid.filter((t) => !t.archived);
+
+  // Nothing holds ids unique once tasks are written directly - there is no allocator
+  // in the path. Two files claiming one id makes every `depends_on` on it ambiguous.
+  const byId = new Map();
+  for (const t of valid) {
+    if (!byId.has(t.id)) byId.set(t.id, []);
+    byId.get(t.id).push(t.file);
+  }
+  for (const [id, files] of byId) {
+    if (files.length > 1) problems.push({ kind: "duplicate-id", id, files: files.sort() });
+  }
+
+  for (const t of live) {
+    for (const dep of t.depends_on || []) {
+      if (!known.has(dep)) problems.push({ kind: "dangling-dep", id: t.id, file: t.file, ref: dep });
+    }
+  }
+
+  const graph = new Map(valid.map((t) => [t.id, new Set((t.depends_on || []).filter((d) => known.has(d)))]));
+  const inACycle = new Set();
+  for (const t of live) {
+    if (inACycle.has(t.id)) continue;
+    if (!hasCycle(graph, t.id)) continue;
+    // Collect the whole strongly-connected group so one cycle yields one problem.
+    const members = live.filter((x) => !inACycle.has(x.id) && reaches(graph, t.id, x.id) && reaches(graph, x.id, t.id));
+    for (const m of members) inACycle.add(m.id);
+    problems.push({ kind: "cycle", ids: members.map((m) => m.id).sort() });
+  }
+
+  const result = { contract_version: 1, ok: problems.length === 0, checked: valid.length, problems };
+  if (problems.length) result[EXIT] = 4;
+  return result;
+}
+
+/** True if `to` is reachable from `from` in `graph` (`from === to` counts only via a real edge). */
+function reaches(graph, from, to) {
+  const stack = [...(graph.get(from) || [])];
+  const seen = new Set();
+  while (stack.length) {
+    const n = stack.pop();
+    if (n === to) return true;
+    if (seen.has(n)) continue;
+    seen.add(n);
+    for (const next of graph.get(n) || []) stack.push(next);
+  }
+  return false;
 }
 
 /** Normalize file prefixes to multiples of 10 (010, 020, …) to restore ordering space after moves. */

@@ -1,18 +1,18 @@
 ---
 name: maintaining-skills
-description: Update evolvable skill knowledge files. Use when user explicitly invokes /maintaining-skills to teach, add, or update knowledge in a skill. Triggers on "/maintaining-skills". Never auto-triggers — only on explicit user invocation.
+description: Update evolvable skill knowledge files. Use only when the user explicitly names maintaining-skills to teach, add, or update knowledge in a skill. Never auto-trigger.
 ---
 
 # Maintaining Skills
 
-Update evolvable skills with new knowledge. Explicitly invoked by user — never auto-trigger.
+Update evolvable skills with new knowledge. The user must explicitly name maintaining-skills; never auto-trigger.
 
 ## Invocation
 
-`/maintaining-skills [target]: <content>`
+`maintaining-skills [target]: <content>`
 
-- **With target**: `/maintaining-skills querying-internal-data: Settlement updates on the 10th`
-- **Without target**: `/maintaining-skills: <content>` — infer from active skills in conversation, ask to confirm if ambiguous
+- **With target**: `maintaining-skills querying-internal-data: Settlement updates on the 10th`
+- **Without target**: `maintaining-skills: <content>` - infer from active skills in conversation, ask to confirm if ambiguous
 
 ## Process
 
@@ -25,8 +25,11 @@ Update evolvable skills with new knowledge. Explicitly invoked by user — never
 
 Look for the target's maintenance config:
 
-- Generic skills: `~/.claude/skills/{name}/MAINTENANCE.md`
-- Project skills: `{project_root}/.claude/skills/{name}/MAINTENANCE.md`
+- Generic user skills: always edit `~/.claude/skills/{name}/MAINTENANCE.md`, including when this skill was loaded from the Codex mirror. Never edit `~/.agents/skills`.
+- Project skills under Claude Code: `{project_root}/.claude/skills/{name}/MAINTENANCE.md`
+- Project skills under Codex: `{project_root}/.agents/skills/{name}/MAINTENANCE.md`
+
+If both project paths exist as distinct directories, ask which is authoritative before editing.
 
 `{project_root}` = the git root of the current working directory. If not in a git repo, ask the user.
 

@@ -1,132 +1,150 @@
-# Onboard - Resuming a Session
+# Onboard - Resume Work
 
-Follow these steps in order when the user wants to continue from a previous session.
+Load the smallest state that supports a safe continuation.
 
-Onboard runs on fresh context. Judgment-heavy work (compaction, recovery, archive retrieval) belongs here, not at offboard.
+## 1. Locate and Upgrade Storage
 
----
+Resolve `<state-dir>` once. Default: `context/session_states/`. Honor a plural `session states:` directory override in project instructions and use `<state-dir>` in every later command.
 
-## Step 1 - Locate the Journal (and Migrate if Needed)
+For migration only, also honor a legacy singular `session state:` file override. If `<state-dir>` is missing but that file or `context/SESSION_STATE.md` exists:
 
-Check the project's configured folder (see SKILL.md "Project Layout"). Default: `context/session_states/`.
+1. Create the folder.
+2. Move the legacy file verbatim to `0000-legacy.md` with `git mv` when tracked.
+3. Create COMMON from `common-format.md`.
+4. Add one active topic pointing to `0000` for unclassified legacy state.
 
-**Folder exists:** proceed to Step 2.
+If neither exists, report that no session state exists, collect current Git state, and continue to Step 7. Step 8 creates storage after work is confirmed.
 
-**Folder missing, but legacy `context/SESSION_STATE.md` exists** (or the path a `session state:` line in project CLAUDE.md points to): migrate mechanically, zero classification:
+If `<state-dir>` contains session files but no COMMON, report incomplete state and ask before reconstructing the active view.
 
-1. Create the folder
-2. `git mv` (or `mv` if untracked) the old file to `session_states/0000-legacy.md` - verbatim, no edits
-3. Create `COMMON.md` from the SKILL.md template, empty except one index line:
-   `- legacy [open]: 0000 - pre-migration state, unclassified`
-4. Treat `0000-legacy.md` as the latest session file for the rest of onboard. It has no capsule or frontmatter; read it whole (same cost as the old skill's onboard)
+### Existing COMMON format upgrade
 
-Durable entries in the legacy file migrate lazily: when a session actually touches one, that session promotes it to COMMON.md or a task note. Entries nobody touches again just age out in the archive. Never do a bulk classification pass.
+When COMMON lacks `budget_words` frontmatter or uses legacy headings:
 
-**Neither exists:** tell the user "No session state found - starting fresh." Run git state (Step 3) for general context, skip to Step 8 to ask what to work on, then do Step 9 (create the session file).
+1. Read `common-format.md`.
+2. Add or merge frontmatter containing `budget_words: {target: 4000, hard: 6000}`.
+3. Rename legacy headings mechanically:
+   - `Constraints & Conventions` -> `Constraints`
+   - `Active Decisions` -> `Decisions`
+   - `Open Questions` -> `Questions`
+   - `Tombstones` -> `Redirects`
+   - `Topic Index` -> `Topics`
 
----
+Do not combine format migration with semantic pruning. Preserve existing entries until Step 10 evaluates them.
 
-## Step 2 - Read COMMON.md + Latest Session File
+## 2. Read Fixed State
 
-The fixed read set, in order:
+Read in order:
 
-1. `COMMON.md` - whole file (it's budgeted small)
-2. Latest session file (highest id) - Handoff Capsule first. Read the Milestones body only if the capsule is missing (unclean shutdown, see Step 4) or explicitly points into it
+1. COMMON, whole file.
+2. Latest session file, Handoff first.
 
-Do NOT read older session files yet - that's Step 6, and only if warranted.
+Accept legacy `## Handoff Capsule` in old sessions. Read the Log/body only when Handoff is missing, explicitly points there, or recovery requires it.
 
-Internalize from the capsule: Status, Work Checklist, What's Next, Failed Approaches (or task notes), Uncommitted Changes, Docs That Will Need Reading. From COMMON.md: constraints, active decisions, open questions, and which topics current work might touch.
+## 3. Compare Minimal Git State
 
----
-
-## Step 3 - Check Git State
-
-```bash
-bash ~/.claude/skills/journaling-session-memory/scripts/git-state.sh
-```
-
-- **Stash from a previous session?** Flag to user: "Found stash: `<name>`. Apply it?" Wait for confirmation.
-- **Branch mismatch** vs the latest session file's `branch:` frontmatter? Flag to user.
-- **Dirty state that doesn't match the capsule's Uncommitted Changes?** Flag to user before touching anything - something changed outside Claude sessions.
-
----
-
-## Step 4 - Unclean Shutdown Check
-
-Signals the previous session died without offboarding (any one is enough to suspect):
-
-- Latest session file has `finalized: false` (primary signal)
-- Commits in `git log` newer than the file's `head:` hash
-- Tracker shows task/subtask states the capsule doesn't mention
-
-These are signals, not proof - hooks, rebases, or work outside Claude can explain git divergence. Report as **"previous session appears to have ended uncleanly"**, never as fact, and never silently "fix" anything.
-
-Recovery, cheapest first:
-
-1. The dead session's Milestones section - this is why checkpoints exist; whatever was checkpointed survived
-2. `git log` + `git diff <head>..HEAD` - what actually changed since the last known state
-3. Tracker notes written mid-session (`task show <id>`)
-4. Last resort, offer, don't default: "I can dig through the previous session's transcript if the diff doesn't explain the state." Transcripts persist as JSONL under `~/.claude/projects/<project-dir>/` - verify the path exists before promising anything
-
-After recovery: leave the dead file's `finalized: false` as-is (it is evidence), summarize reconstructed state to the user, and note the reconstruction in your own session file's first milestone.
-
----
-
-## Step 5 - Load Task Tracker State
-
-Skip if `.tasks/` doesn't exist.
-
-1. `task show <id>` for each id in the latest session file's `tasks:` frontmatter - notes carry task-scoped context (failed approaches live here in tracker projects)
-2. `task list --ready` - surface tasks whose deps are satisfied
-3. Cross-reference with the capsule. Tracker is authoritative on task state; the journal is authoritative on narrative
-
----
-
-## Step 6 - Targeted Archive Retrieval
-
-Only when there is an active task. Never auto-read the archive.
-
-1. Check the Topic Index: does current work touch an indexed topic? If yes, reading those sessions' capsules is expected - do it
-2. Grep the archive with the task title/id, changed paths, and salient terms from the capsule's Retrieval Hints. Look at match counts and filenames first; read nothing yet
-3. Read the capsule (not the body) of strong matches only. Escalate to a full session body only if its capsule confirms relevance
-4. The index is advisory: a strong grep hit on an unindexed session is still eligible
-
-Mid-task rule: if you hit a wall later in the session and suspect history matters, come back to this step - the archive doesn't expire.
-
----
-
-## Step 7 - Compaction Obligation
+Run:
 
 ```bash
-grep -cv '^\s*$' COMMON.md
+git branch --show-current
+git rev-parse --short HEAD
+git status --short
 ```
 
-Over 120 nonblank lines: trim below 120 following SKILL.md's eviction order (full text always survives in the journal, so eviction is safe), or add a one-line note to COMMON.md recording why compaction isn't possible right now. Over 150: compaction is mandatory, no deferral.
+Compare branch, HEAD, and tree state with latest session frontmatter/Handoff.
 
-While in the file: merge obviously-duplicate topics (match-first rule failed somewhere) and fix stale statuses you can verify from Steps 2-5. Don't touch entries you can't verify.
+- Branch mismatch: report before editing.
+- Dirty tree not described by Handoff: report before editing.
+- Query stashes only when Handoff names one or recovery evidence suggests one.
+- Query commit history only when recorded HEAD differs from current HEAD.
 
----
+## 4. Recover an Unclean Session
 
-## Step 8 - Confirm with User
+Suspect, do not assume, an unclean end when:
 
-**Resuming:** "Resuming [task id/description]: [title]. [1-line status]. Next step: [action]. Proceed?"
+- latest file has `finalized: false`;
+- current HEAD differs from recorded `head` without explanation;
+- tracker state conflicts with Handoff.
 
-**Fresh start:** ask what to work on.
+Recover cheapest first:
 
-Do NOT start implementing before the user confirms. Priorities may have changed since last session.
+1. Latest session Log, or legacy Milestones/Corrections sections.
+2. Targeted `git diff <recorded-head>..HEAD` or working-tree diff.
+3. Relevant task notes.
 
-Also surface here, if applicable: docs flagged in "Docs That May Need Updating" (ask: update now or defer?), and anything Step 3/4 flagged.
+If evidence cannot reconstruct the state, report the gap and ask. Never inspect provider transcripts. Leave the old file unchanged; record reconstruction in the new session Log.
 
-After confirmation: read every doc and invoke every skill in the capsule's "Docs That Will Need Reading", then read `[-]` in-progress files from the checklist.
+## 5. Load Tracker State
 
----
+Skip without `.tasks/`.
 
-## Step 9 - Create This Session's File
+1. Read each task in latest session `tasks:`.
+2. Run `task list --ready`.
+3. Trust tracker for task status; trust session file for narrative evidence.
 
-Immediately after confirmation, before any implementation work:
+## 6. Retrieve Archive Selectively
 
-1. Next id = highest existing id + 1, slug from the confirmed task
-2. Write the file from the SKILL.md template: frontmatter (`finalized: false`, current branch, task ids, topics - reuse existing topic names), empty Milestones, no capsule yet
-3. From here on, follow references/checkpoint.md triggers for the rest of the session
+Only with active work:
 
-This file is the write-ahead log: if this session dies, the next onboard recovers from whatever reached Milestones.
+1. Match current subsystem against active COMMON Topics.
+2. Read named sessions' Handoffs.
+3. Search archive by task id, changed path, or retrieval hint when needed.
+4. Read a full historical Log only after its Handoff confirms relevance.
+
+Topics are hints, not gates. A strong archive match remains valid after its topic was pruned.
+
+## 7. Confirm Work
+
+Summarize recovered status and immediate next action. Ask only when the current user message did not already confirm the work or when Steps 3-4 found an unexplained conflict.
+
+Before implementation, load every required doc and skill from task context or Handoff.
+
+## 8. Create the New Session File
+
+Read `session-format.md`. Create the next numbered file immediately before implementation:
+
+- If `<state-dir>` does not exist, create it and create COMMON from `common-format.md` first.
+
+- `finalized: false`
+- current branch
+- active task ids
+- existing matching topic names
+- empty Log
+- no Handoff until offboard
+
+Record reconstruction notes now.
+
+## 9. Reconcile Recovery Evidence
+
+When Steps 3-5 found new or reconstructed evidence, derive its touched paths, dependencies, issue/task ids, workarounds, and `RECHECK` events. Apply checkpoint's COMMON classification now, even when COMMON is below target. Record every C/D/Q change in the new session Log.
+
+Skip only when recovery produced no new project evidence.
+
+## 10. Enforce COMMON Budget
+
+Count first:
+
+```bash
+wc -w context/session_states/COMMON.md
+```
+
+Use the resolved COMMON path instead when the project overrides `<state-dir>`.
+
+- Below declared target: skip pruning.
+- At or above target but below hard ceiling: prune before implementation.
+- At or above hard ceiling: prune below hard before normal work; aim below target.
+
+Read `common-format.md` only when pruning or reconciling pending Log entries.
+
+Prune with evidence, in order:
+
+1. Delete answered Q entries and closed/done Topics.
+2. Delete Redirects with no live inbound reference outside the journal archive.
+3. Delete C/D entries already represented in authoritative documents verified to load for every supported host.
+4. Revalidate conditional entries whose `RECHECK` event may have occurred; KEEP / REPLACE / RETIRE / PROMOTE.
+5. Merge duplicate current entries without changing anchor meaning. Before deleting an anchor, update live non-archive references or keep a Redirect.
+6. Remove stale session ids from Topics; keep only useful retrieval routes.
+
+Age alone never proves obsolescence. Do not delete an unresolved question or current directive without replacement evidence. Append every C/D/Q retirement, replacement, or promotion to the new session Log in the same edit cycle. Routine Topic and Redirect cleanup needs no Log entry.
+
+After COMMON is below the hard ceiling, reconcile any `pending-common` Log entries named by the previous Handoff before normal work. Allocate pending Q anchors now and replace temporary Handoff question text in the new session's eventual Handoff.
