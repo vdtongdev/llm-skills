@@ -30,7 +30,7 @@ If `<state-dir>` contains session files but no COMMON, report incomplete state a
 When COMMON lacks `budget_words` frontmatter or uses legacy headings:
 
 1. Read `common-format.md`.
-2. Add or merge frontmatter containing `budget_words: {target: 4000, hard: 6000}`.
+2. Add or merge frontmatter containing `budget_words: ...`.
 3. Rename legacy headings mechanically:
    - `Constraints & Conventions` -> `Constraints`
    - `Active Decisions` -> `Decisions`
