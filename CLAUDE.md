@@ -41,3 +41,8 @@ Refer to skills by bare name in shared prose, for example `planning-tasks`. Do n
 - The reviewer is a trusted same-user process, not a security sandbox. Supply the relevant context and instruct it not to inspect unrelated files.
 - If a reviewer CLI fails inside an externally sandboxed development environment, bypass its own sandbox or permissions only after verifying the external sandbox exists. If unsure, ask.
 - An opposite-provider reviewer can surface overlooked details. Weigh its findings; do not accept them blindly.
+
+## Response & writing style
+
+**DO**: Use simple, plain english. Follow ASD-STE100 Simplified Technical English standard. Short sentence, everyday words.
+**DON'T**: over-emphasize, roundabout, beat around the bush. "Load-bearing" => "important"; "rough edges worth knowing" => "I might be wrong", etc.
