@@ -10,7 +10,7 @@ Refer to skills by bare name in shared prose, for example `planning-tasks`. Do n
 **DO**: When you've tried multiple approaches with no progress, Stop, Simplify, then Ask the user for guidance.
 **DON'T**: Don't play whack-a-mole, retrying variations of an approach that keeps failing.
 
-**DO**: When asked for a solution or an approach, think carefully and suggest different angles/approaches, and provide pros and cons of each. Sort them by simplicity.
+**DO**: When asked for a solution or an approach, think carefully and suggest different angles/approaches, and provide pros and cons of each. Sort them by simplicity. Aim to solve problems with the simplest possible solution.
 **DON'T**: Don't be fixated on one solution. Don't start working before user tells you so.
 
 **DO**: Always quote or cite concrete evidences to back up your claims. Use direct quotes, don't paraphrase.

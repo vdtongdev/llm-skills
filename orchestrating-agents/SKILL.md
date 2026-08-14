@@ -24,9 +24,25 @@ Otherwise use three distinct roles:
 
 Project instructions may require independent review even for direct work. If a required role is unavailable, disclose it and pause. Resume only when the role becomes available or the user explicitly changes the execution shape. Never describe a fallback as three-party work or independent review.
 
+## Classify Untracked Work
+
+When requested work does not map to an existing task or accepted task graph, classify it before execution:
+
+1. **Small**: If it satisfies every direct-work condition above, handle it immediately with the orchestrator. Do not create a task solely to execute it.
+2. **Heavy**: If it needs broad research, six or more implementation steps, multi-file architectural decisions, or unresolved design, cite the observed complexity and ask whether to invoke `planning-tasks`. Do not disguise planning work as a worker assignment.
+3. **Medium**: Otherwise analyze the objective, task type, write surface, dependencies, risks, and required checks, then dispatch one untracked worker.
+
+Before dispatching medium work:
+
+1. Inspect the available skill list, project documents and instructions, relevant source files, logs, and other task evidence.
+2. Select context by task type and observed scope. For example, coding may need the applicable coding antipattern document; code review may need the applicable antipattern document plus `reviewing-code`. Treat examples as routing hints, not a fixed table.
+3. Prime the worker with the selected content and its source. For long sources, name the exact path and relevant sections to read instead of copying unrelated content.
+
+Do not create a tracker task for medium work solely because it is delegated. Apply the normal onboarding, path ownership, verification, journal-proposal, integration, and review rules. Skip only the tracked-worker preflight and task-state operations.
+
 ## Enter Through the Task Suite
 
-When `.tasks/` exists or `planning-tasks` produced tasks:
+When requested work maps to an existing tracker task or `planning-tasks` produced an accepted task graph:
 
 1. Invoke `managing-tasks`.
 2. Require `task verify` to exit 0 before dispatch. Return invalid task definitions to planning or fix them within granted authority.
@@ -34,9 +50,11 @@ When `.tasks/` exists or `planning-tasks` produced tasks:
 4. Run `task show <id>` for every candidate; it is the briefing source for `kind`, `context[]`, files, dependencies, tests, notes, and subtasks.
 5. Assign explicit task ids. Never let a worker select or begin another task independently.
 
-Without a tracker, build equivalent bounded assignments from the accepted plan and project evidence.
+An unrelated `.tasks/` directory does not force untracked work into the task suite. Use the classification above when no matching task exists.
 
 ## Build Parallel Waves
+
+Apply parallel waves only to tracked task graphs. Keep untracked medium work with its single assigned worker.
 
 Parallelize workers when every pair of tasks satisfies all conditions:
 
@@ -68,7 +86,7 @@ Delegated agents do not create session files and do not edit session journals or
 
 Give each worker a bounded contract containing:
 
-- task id, objective, definition of done, owned paths, and forbidden paths or actions
+- task id when tracked, otherwise an assignment label; objective, definition of done, owned paths, and forbidden paths or actions
 - exact project instructions, PRD, decisions, and handoffs to read
 - critical facts a cold agent may miss, with an instruction to verify them against source
 - required checks and how to interpret their output
@@ -82,6 +100,8 @@ Every tracked worker must, before its first edit:
 4. Set the task to `in-progress` and maintain subtask state as work advances.
 
 The orchestrator inspects `kind` and `context[]` while scheduling but need not reload their full contents when the worker contract makes this preflight mandatory. The worker's completion evidence names the skills and documents it loaded.
+
+Every untracked worker must name the primed skills, documents, and task evidence it loaded. It does not invoke `managing-tasks`, create a task, or update tracker state.
 
 Workers may edit only assigned working-tree paths. They never stage, commit, push, deploy, or communicate externally. The orchestrator alone owns the Git index and commits, subject to user and project authorization.
 
@@ -161,11 +181,12 @@ Resolve implementation disputes from source, tests, specifications, and reproduc
 Before claiming completion, verify every item:
 
 - [ ] The execution shape satisfies the direct-work threshold and project rules, or an explicit user-approved change is recorded.
-- [ ] `task verify` passed when the task suite applies; every tracked worker invoked `managing-tasks`, ran `task show <id>` itself, and received one explicit ready task id.
+- [ ] Untracked work was classified as small, medium, or heavy; medium work received one context-primed worker, and heavy work was offered `planning-tasks` when planning would reduce risk.
+- [ ] `task verify` passed when the task suite applies; every tracked worker invoked `managing-tasks`, ran `task show <id>` itself, and received one explicit ready task id. Untracked workers skipped tracker-only operations.
 - [ ] Parallel-wave tasks had disjoint dependencies, write surfaces, generated artifacts, and mutable runtime state.
 - [ ] Every subagent completed delegated onboarding before work.
 - [ ] Every tracked worker resolved `kind`, invoked its mapped skill, and loaded the mapped document plus all `context[]` entries before editing.
-- [ ] Workers maintained task state and stopped on undeclared scope, shared state, escalation triggers, and third failed attempts.
+- [ ] Tracked workers maintained task state; all workers stopped on undeclared scope, shared state, escalation triggers, and third failed attempts.
 - [ ] Workers did not stage, commit, push, deploy, or communicate externally; the orchestrator staged explicit paths and created only authorized commits.
 - [ ] The orchestrator checked one layer beyond each assignment and reconciled every worker's diff, checks, tracker state, and proposals.
 - [ ] Every checkpoint trigger produced Journal, task-note, COMMON, and Handoff-fact proposal fields; only the orchestrator wrote accepted task notes, session Log entries, and COMMON changes.

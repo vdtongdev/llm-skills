@@ -1,4 +1,4 @@
 interface:
   display_name: "Orchestrating Agents"
-  short_description: "Coordinate task waves and serial review"
-  default_prompt: "Use $orchestrating-agents to run verified task waves with onboarded workers, orchestrator-owned journals and commits, and one serial adversarial review."
+  short_description: "Classify and coordinate delegated work"
+  default_prompt: "Use $orchestrating-agents to classify work, prime bounded workers with relevant context, integrate changes, and run one serial adversarial review."
