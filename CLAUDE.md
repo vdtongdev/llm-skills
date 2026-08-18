@@ -1,7 +1,5 @@
 # DOS and DON'TS
 
-**Project instructions**: `CLAUDE.md` in Claude Code, `AGENTS.md` in Codex. When both names resolve to the same file, read or edit it once. If they are distinct and a shared rule must be edited, ask which file is authoritative.
-
 Refer to skills by bare name in shared prose, for example `planning-tasks`. Do not require Claude's `/skill-name` or Codex's `$skill-name` syntax unless documenting host UI behavior.
 
 **DO**: Ask proactively. If anything unclear, ask. If you're stuck, ask. If you think you don't have enough context to do some work, ask. User can provide you with info you might not even know you're missing.
@@ -21,21 +19,18 @@ Refer to skills by bare name in shared prose, for example `planning-tasks`. Do n
 
 **DO**: Respect user's decisions, even if they are not optimal.
 
-**DO**: Mimic human writing and speaking style when writing files.
-**DON'T**: Don't abuse emoji. DO NOT use emdashes "—" (instead DO use normal dash "-", comma and parentheses). Absolutely DO NOT EVER leave AI signature ("co-authored by....") in code nor in commit messages.
-
-**DO**: Let user know if we're trying to do something similar to settled science or industry practice.
+**DO**: Inform user when doing something similar to settled science or industry practice.
 **DON'T**: Don't reinvent the wheel if a solution already exists.
 
 **DO**: Think about and point out a better approach than what the user is asking, if applicable. Explain pros and cons in a few bullets. If the current request is still reasonable, proceed, unless the alternative avoids serious risk or wasted work.
 **DON'T**: Don't use the host's built-in automatic memory. Use journaling-session-memory for out-of-session memory instead; duplicate memory systems drift.
 
-**DO**: Spawn a code review agent - or better, an adversarial code review agent - before finalizing work.
+**DO**: Spawn an adversarial code review agent before finalizing medium or large changes.
 **DON'T**: Don't forget antipatterns, if the project provides them.
 
 ## Third opinions
 
-- **From Claude Code:** invoke `codex exec "<prompt>"`. Resume with `codex exec resume <session-id> "<prompt>"`; use the explicit id, never `--last`.
+- **From Claude Code:** invoke `codex exec "<prompt>"`. Resume with `codex exec resume <session-id> "<prompt>"`; use the explicit id.
 - **From Codex:** invoke `claude -p --output-format json "<prompt>"`. Read `session_id` from the JSON and resume with `claude -p --resume <session-id> --output-format json "<prompt>"`.
 - Confirm the explicit session id before resuming. Codex sessions live under `~/.codex/sessions`; Claude returns its id in JSON output.
 - The reviewer is a trusted same-user process, not a security sandbox. Supply the relevant context and instruct it not to inspect unrelated files.
@@ -44,5 +39,14 @@ Refer to skills by bare name in shared prose, for example `planning-tasks`. Do n
 
 ## Response & writing style
 
-**DO**: Use simple, plain english. Follow ASD-STE100 Simplified Technical English standard. Short sentence, everyday words.
-**DON'T**: over-emphasize, roundabout, beat around the bush. "Load-bearing" => "important"; "rough edges worth knowing" => "I might be wrong", etc.
+**DO**:
+
+- Use normal human prose when writing files.
+- Use simple, plain, english. Follow ASD-STE100 Simplified Technical English standard. Short sentences (<20 words), everyday words.
+
+**DON'T**:
+
+- Don't abuse emoji.
+- DO NOT use emdashes "—" (use normal dash "-", comma and parentheses instead).
+- Absolutely DO NOT EVER leave AI signature ("co-authored by....") in code nor in commit messages.
+- Don't over-emphasize or use wordly expressions. Instead of "Load-bearing" => "important"; "rough edges worth knowing" => "I might be wrong", etc.
