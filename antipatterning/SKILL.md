@@ -79,6 +79,20 @@ Examples are optional. Guidance must remain complete without them.
 
 Use stable IDs. Change titles and filenames without changing IDs. Record lineage in `relationships` when replacing, merging, or splitting entries.
 
+## Entry fitness
+
+Apply these criteria when creating, migrating, or reviewing entries.
+
+An entry belongs in the registry when ALL of these hold:
+
+- **Recurrent**: the trap has a realistic chance of firing again. A one-shot lesson already applied everywhere is dead weight.
+- **Not tool-covered**: if a linter, type checker, or compiler already flags the exact mistake, the tool is the recall mechanism. Do not duplicate it.
+- **Not duplicative**: if two entries share the same root rule, merge them. Different failure modes go in one entry's guidance, not two entries.
+- **Still relevant**: if the codebase has moved past the condition (framework migration complete, API removed), retire the entry.
+- **Non-obvious**: the trap must be something a competent reader of the code would not catch from context alone.
+
+When migrating entries from prose documents, do not port mechanically. Evaluate every entry against these criteria and flag merges, retirements, and questionable entries before writing YAML.
+
 ## Validate
 
 Run validation after editing records:
