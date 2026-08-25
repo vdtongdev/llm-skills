@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+import { main } from "../scripts/testmap.mjs";
+
+main(process.argv.slice(2), { cwd: process.cwd() }).then(
+  (code) => process.exit(code ?? 0),
+  (error) => {
+    console.error(error?.message || String(error));
+    process.exit(error?.exitCode ?? 1);
+  },
+);

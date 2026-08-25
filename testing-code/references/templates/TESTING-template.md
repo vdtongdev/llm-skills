@@ -80,6 +80,7 @@ make test-e2e           # E2E tests only
 ## Anti-Patterns for This Stack
 
 <!-- Project- and stack-specific bad patterns not covered by the generic skill -->
+<!-- If the project has an `.antipatterns/` registry, record them there and delete this section -->
 <!-- Delete this section if nothing specific to add -->
 
 - TODO: Add anti-patterns specific to your framework/DB/test setup

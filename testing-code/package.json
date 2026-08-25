@@ -1,0 +1,19 @@
+{
+  "name": "testing-code",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.mjs"
+  },
+  "bin": {
+    "testmap": "bin/testmap"
+  },
+  "dependencies": {
+    "minimatch": "10.2.6",
+    "yaml": "2.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
