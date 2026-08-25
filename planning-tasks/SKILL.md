@@ -49,6 +49,8 @@ If the project instructions reference a structure doc (e.g., `FILE_STRUCTURE.md`
 - Available fixtures, helpers, utilities to reuse
 - Current state of the UI if frontend work (read templates + components)
 
+**Anti-pattern recall:** If the project has an anti-pattern registry (`.antipatterns/` or equivalent, via `/antipatterning`), recall by topic and path for the feature's area before designing. A known trap found during planning is a design constraint; the same trap found during implementation is rework.
+
 ### 3. Design Decisions
 
 Settle all architectural and design questions in this phase. The executor should not be inventing:
