@@ -1,0 +1,20 @@
+{
+  "name": "antipatterning",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.mjs"
+  },
+  "bin": {
+    "antipattern": "bin/antipattern"
+  },
+  "dependencies": {
+    "minimatch": "10.2.6",
+    "proper-lockfile": "4.1.2",
+    "yaml": "2.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

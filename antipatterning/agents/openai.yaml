@@ -1,0 +1,4 @@
+interface:
+  display_name: "Antipatterning"
+  short_description: "Manage and recall project anti-pattern rules"
+  default_prompt: "Use $antipatterning to find relevant project anti-patterns before changing code."
