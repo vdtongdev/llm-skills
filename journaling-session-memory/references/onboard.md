@@ -63,6 +63,7 @@ Compare branch, HEAD, and tree state with latest session frontmatter/Handoff.
 
 - Branch mismatch: report before editing.
 - Dirty tree not described by Handoff: report before editing.
+- A previous session file dirty at its `head:` line alone is expected, not evidence of an unclean end. The hash cannot be known before the commit exists, so the field is filled in afterwards and that file is never clean against the commit naming it. Do not amend to chase it.
 - Query stashes only when Handoff names one or recovery evidence suggests one.
 - Query commit history only when recorded HEAD differs from current HEAD.
 
