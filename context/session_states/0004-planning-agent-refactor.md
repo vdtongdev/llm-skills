@@ -33,3 +33,4 @@ topics: [planning-tasks, orchestrating-agents]
 - decision: host adaptation stays capability-based. Use native agent tools; when cross-provider models are unavailable, use distinct available models and disclose the limitation.
 - done: Q-01 resolved by the capability-based host adaptation rule; no host-specific Codex adapter is required now.
 - done: `planning-tasks/SKILL.md` - added the concise host-adaptation rule approved by the user.
+- done: commit `f41ac98` records the reviewed planning-agent renovation.
