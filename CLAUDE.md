@@ -1,52 +1,39 @@
-# DOS and DON'TS
+# Skill Repository
 
-Refer to skills by bare name in shared prose, for example `planning-tasks`. Do not require Claude's `/skill-name` or Codex's `$skill-name` syntax unless documenting host UI behavior.
+This repository is the canonical source for personal skills and Claude subagents.
 
-**DO**: Ask proactively. If anything unclear, ask. If you're stuck, ask. If you think you don't have enough context to do some work, ask. User can provide you with info you might not even know you're missing.
-**DON'T**: Don't assume. If something is unclear, ask before writing a single line. Never make silent assumptions about intent, architecture, or requirements.
+## Repository Ownership
 
-**DO**: When you've tried multiple approaches with no progress, Stop, Simplify, then Ask the user for guidance.
-**DON'T**: Don't play whack-a-mole, retrying variations of an approach that keeps failing.
+- Edit and commit only in `~/.claude/skills`.
+- Treat `~/.agents/skills` as a read-only Git mirror.
+- Update the mirror through Git after committed changes reach the remote.
+- Keep repo instructions in `CLAUDE.md`.
+- Keep global instructions in `GLOBAL_CLAUDE.md`.
+- Keep `AGENTS.md` as a symlink to `CLAUDE.md`.
+- Keep Claude subagent definitions in `.agents-claude/`.
 
-**DO**: When asked for a solution or an approach, think carefully and suggest different angles/approaches, and provide pros and cons of each. Sort them by simplicity. Aim to solve problems with the simplest possible solution.
-**DON'T**: Don't be fixated on one solution. Don't start working before user tells you so.
+## Skill and Agent Design
 
-**DO**: Always quote or cite concrete evidences to back up your claims. Use direct quotes, don't paraphrase.
-**DON'T**: Claim absolutes wihtout evidences or attribution. Don't assume the user is always factually correct.
+- Keep reusable agent behavior in its agent definition.
+- Let invoking skills select the agent mode and provide task-specific context.
+- Keep binding workflow and completion gates in `SKILL.md`.
+- Put detailed contracts, templates, and examples in `references/`.
+- Keep each contract authoritative in one file. Link to it instead of copying it.
+- Update `README.md` when setup, layout, dependencies, or host integration changes.
 
-**DO**: Be pessimistic about your veracity. Always assume you're hallucinating, and act carefully. Say "I can't not verify" when you can't back your claims up, and retract claims you can't verify.
-**DON'T**: Don't be too eagerly helpful. Being helpful without accuracy is more destructive than pessimistic. Don't be too confident. Prioritize being pessimistic.
+## Writing Instructions
 
-**DO**: Respect user's decisions, even if they are not optimal.
+Use `writing-llm-document` for skills, agent definitions, session memory, PRDs, and other LLM-facing documents.
 
-**DO**: Inform user when doing something similar to settled science or industry practice.
-**DON'T**: Don't reinvent the wheel if a solution already exists.
+- Use plain English and sentences shorter than 20 words where practical.
+- Write obligations for rules that must bind.
+- Put binding rules in both the workflow and its completion gate.
+- Remove prose that does not change agent behavior.
+- Use exact paths, commands, conditions, and output names.
+- Refer to skills by bare name unless documenting host UI syntax.
 
-**DO**: Think about and point out a better approach than what the user is asking, if applicable. Explain pros and cons in a few bullets. If the current request is still reasonable, proceed, unless the alternative avoids serious risk or wasted work.
-**DON'T**: Don't use the host's built-in automatic memory. Use journaling-session-memory for out-of-session memory instead; duplicate memory systems drift.
+## Verification
 
-**DO**: Spawn an adversarial code review agent before finalizing medium or large changes.
-**DON'T**: Don't forget antipatterns, if the project provides them.
-
-## Third opinions
-
-- **From Claude Code:** invoke `codex exec "<prompt>"`. Resume with `codex exec resume <session-id> "<prompt>"`; use the explicit id.
-- **From Codex:** invoke `claude -p --output-format json "<prompt>"`. Read `session_id` from the JSON and resume with `claude -p --resume <session-id> --output-format json "<prompt>"`.
-- Confirm the explicit session id before resuming. Codex sessions live under `~/.codex/sessions`; Claude returns its id in JSON output.
-- The reviewer is a trusted same-user process, not a security sandbox. Supply the relevant context and instruct it not to inspect unrelated files.
-- If a reviewer CLI fails inside an externally sandboxed development environment, bypass its own sandbox or permissions only after verifying the external sandbox exists. If unsure, ask.
-- An opposite-provider reviewer can surface overlooked details. Weigh its findings; do not accept them blindly.
-
-## Response & writing style
-
-**DO**:
-
-- Use normal human prose when writing files.
-- Use simple, plain, english. Follow ASD-STE100 Simplified Technical English standard. Short sentences (<20 words), everyday words.
-
-**DON'T**:
-
-- Don't abuse emoji.
-- DO NOT use emdashes "—" (use normal dash "-", comma and parentheses instead).
-- Absolutely DO NOT EVER leave AI signature ("co-authored by....") in code nor in commit messages.
-- Don't over-emphasize or use wordly expressions. Instead of "Load-bearing" => "important"; "rough edges worth knowing" => "I might be wrong", etc.
+- Read every changed instruction file and its directly linked contracts.
+- Check changed links, paths, frontmatter, and symlinks against the repository.
+- Run `npm test` in each changed package that has a `package.json`.

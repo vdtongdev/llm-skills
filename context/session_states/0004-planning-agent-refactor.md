@@ -6,7 +6,7 @@ finalized: false
 branch: master
 head:
 tasks: []
-topics: [planning-tasks, orchestrating-agents]
+topics: [planning-tasks, orchestrating-agents, skill-repository]
 ---
 
 # Session 0004 - planning-agent-refactor
@@ -34,3 +34,9 @@ topics: [planning-tasks, orchestrating-agents]
 - done: Q-01 resolved by the capability-based host adaptation rule; no host-specific Codex adapter is required now.
 - done: `planning-tasks/SKILL.md` - added the concise host-adaptation rule approved by the user.
 - done: commit `f41ac98` records the reviewed planning-agent renovation.
+- decision: split shared host instructions from repository instructions. `GLOBAL_CLAUDE.md` owns shared behavior; `CLAUDE.md` owns this repository's workflow and writing rules.
+- done: `CLAUDE.md`, `GLOBAL_CLAUDE.md`, and `README.md` - wrote the editable repo draft, preserved shared rules, and documented the split.
+- done: `~/.claude/CLAUDE.md` - repointed the global Claude link to `~/.claude/skills/GLOBAL_CLAUDE.md`.
+- discovered: `~/.agents/skills/GLOBAL_CLAUDE.md` does not exist before Git synchronization. Keep `~/.codex/AGENTS.md` on its working target until the draft is committed and mirrored.
+- discovered: adversarial review found existing installations would lose Codex global rules after mirror synchronization unless `~/.codex/AGENTS.md` is repointed.
+- done: `README.md` - added ordered migration steps for existing Claude and Codex instruction links.

@@ -9,16 +9,35 @@ Clone this repository to `~/.claude/skills` first. Then run:
 ```bash
 mkdir -p ~/.agents ~/.codex
 git clone "$(git -C ~/.claude/skills remote get-url origin)" ~/.agents/skills
-ln -s ~/.agents/skills/CLAUDE.md ~/.codex/AGENTS.md
+ln -s ~/.claude/skills/GLOBAL_CLAUDE.md ~/.claude/CLAUDE.md
+ln -s ~/.agents/skills/GLOBAL_CLAUDE.md ~/.codex/AGENTS.md
 ln -s skills/.agents-claude ~/.claude/agents
 npm ci --prefix ~/.claude/skills/managing-tasks
 ```
 
-`ln -s` refuses existing targets. Inspect `~/.codex/AGENTS.md` or `~/.claude/agents` and resolve conflicts manually. Do not overwrite them.
+`ln -s` refuses existing targets. Inspect each destination and resolve conflicts manually. Do not overwrite them.
 
 Claude Code reads skills from `~/.claude/skills`. Codex reads the mirror from `~/.agents/skills`. Both use the same committed `SKILL.md` files and resources.
 
+Both hosts load shared instructions from `GLOBAL_CLAUDE.md`. Repository work also loads `CLAUDE.md` through the tracked `AGENTS.md` symlink.
+
 Claude Code reads personal subagents through `~/.claude/agents`. That path links to the tracked `.agents-claude/` directory in this repository.
+
+## Migrate existing instruction links
+
+First synchronize a commit that contains `GLOBAL_CLAUDE.md`. Then inspect the existing links:
+
+```bash
+readlink ~/.claude/CLAUDE.md
+readlink ~/.codex/AGENTS.md
+```
+
+If they are the managed links from the previous layout, repoint them:
+
+```bash
+ln -sfn ~/.claude/skills/GLOBAL_CLAUDE.md ~/.claude/CLAUDE.md
+ln -sfn ~/.agents/skills/GLOBAL_CLAUDE.md ~/.codex/AGENTS.md
+```
 
 ## Synchronize committed changes
 
@@ -56,4 +75,4 @@ readlink ~/.codex/AGENTS.md
 git -C ~/.agents/skills status --short
 ```
 
-The expected link target is `~/.agents/skills/CLAUDE.md`. Remove only that link and the clean mirror checkout; keep `~/.codex/skills/.system` untouched.
+The expected link target is `~/.agents/skills/GLOBAL_CLAUDE.md`. Remove only that link and the clean mirror checkout; keep `~/.codex/skills/.system` untouched.
