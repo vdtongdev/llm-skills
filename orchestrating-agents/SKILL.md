@@ -18,7 +18,7 @@ Every dispatch names the objective, mode, source paths, settled user decisions, 
 - **Planner / plan review**: plan artifact; review mode and rubric; decision record; settled rulings; code paths allowed only for citation checks.
 - **Task writer**: approved plan; testing policy by layer; project instructions; task schema and quality contracts; owned `.tasks/` paths; verification command.
 - **Worker**: task or assignment; definition of done; project rules; implementation evidence; owned and forbidden paths; required checks.
-- **Code or PR reviewer**: stable artifact; accepted objective; base and head; review skill; project rules and relevant registries. Do not include worker conclusions or a preferred verdict.
+- **Reviewer**: stable artifact; artifact type; accepted objective and rubric; project rules; relevant registries; code-review base and head when applicable. Do not include worker conclusions or a preferred verdict.
 
 Planning dispatches remain under `planning-tasks`. They do not enter the implementation task suite, use worker journal proposals, stage changes, or trigger the serial code-review gate. The main agent still owns user questions, rulings, synthesis, plan files, task acceptance, and journal state.
 
@@ -34,7 +34,7 @@ Handle work directly only when all are true:
 For implementation, use three distinct roles:
 
 1. **Worker**: implement or investigate one assigned task; verify the result.
-2. **Reviewer**: invoke `reviewing-code` and criticize the stable batch independently and adversarially; never implement fixes.
+2. **Reviewer**: criticize the stable batch independently and adversarially; invoke `reviewing-code` for code review; never implement fixes.
 3. **Orchestrator**: schedule workers, verify evidence, integrate and commit changes, maintain journal state, adjudicate findings, and report to the user.
 
 Project instructions may require independent review even for direct work. If a required role is unavailable, disclose it and pause. Resume only when the role becomes available or the user explicitly changes the execution shape. Never describe a fallback as three-party work or independent review.
@@ -122,7 +122,7 @@ Workers may edit only assigned working-tree paths. They never stage, commit, pus
 
 ## Receive Journal Proposals
 
-At every `journaling-session-memory` checkpoint trigger, an implementation worker or code/PR reviewer sends patch-like proposals through its response or an agent message. Do not use line numbers; use paths, sections, task ids, and C/D/Q anchors that survive concurrent edits.
+At every `journaling-session-memory` checkpoint trigger, an implementation worker sends patch-like proposals through its response or an agent message. A delegated reviewer retains review state and returns complete proposals at completion, interruption, or an orchestrator-requested checkpoint. Do not use line numbers; use paths, sections, task ids, and C/D/Q anchors that survive concurrent edits.
 
 Required proposal shape:
 
@@ -173,8 +173,8 @@ Review only after the implementation batch is integrated and stable. Do not para
 1. Spawn one reviewer that did not implement the work.
 2. Require delegated onboarding and invocation of `reviewing-code`.
 3. Give it the accepted objective, base and head, project rules, antipattern routes, and stable integrated artifact. Do not leak worker conclusions, suspected bugs, or a preferred verdict unless testing a named hypothesis.
-4. Have it build the `reviewing-code` checklist and send a Journal proposal. Record the accepted checklist before review continues.
-5. Run `reviewing-code` passes in order. Record checkpoint and finding proposals as they arrive.
+4. Require it to build the `reviewing-code` checklist and run the passes in order.
+5. Require one final response containing the completed review state, findings, and journal proposals. Record accepted proposals after verification.
 6. Require every finding to follow `reviewing-code` severity, evidence, impact, correction, and deduplication rules.
 
 Commit the integrated stable batch before branch review. If commit authority is unavailable, pause and ask the user; do not adapt `reviewing-code` to an uncommitted artifact or claim complete branch review.
@@ -204,7 +204,7 @@ Before claiming completion, verify every item:
 - [ ] Tracked workers maintained task state; all workers stopped on undeclared scope, shared state, escalation triggers, and third failed attempts.
 - [ ] Workers did not stage, commit, push, deploy, or communicate externally; the orchestrator staged explicit paths and created only authorized commits.
 - [ ] The orchestrator checked one layer beyond each assignment and reconciled every worker's diff, checks, tracker state, and proposals.
-- [ ] Every checkpoint trigger produced Journal, task-note, COMMON, and Handoff-fact proposal fields; only the orchestrator wrote accepted task notes, session Log entries, and COMMON changes.
+- [ ] Every worker checkpoint trigger produced all proposal fields. Delegated reviewers returned complete proposals at completion, interruption, or an orchestrator-requested checkpoint. Only the orchestrator wrote accepted task notes, session Log entries, and COMMON changes.
 - [ ] Every accepted journal or COMMON edit has evidence and follows `journaling-session-memory` authority, including orchestrator allocation of new C/D/Q anchors.
 - [ ] The orchestrator committed the integrated stable batch before review or paused for commit authority.
 - [ ] One independent reviewer invoked `reviewing-code` against the stable committed batch; review agents and passes were not parallelized, and the reviewer never implemented fixes.

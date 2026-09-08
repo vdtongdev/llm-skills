@@ -13,8 +13,9 @@ budget_words: { target: 2000, hard: 3500 }
 - D-03: Planner agents from §3 are reused for §5 PRD review (5a and 5b). Bias mitigated via "Ruled" convention. Avoids re-priming cost of fresh reviewer.
 - D-04: One `planner.md` agent file, no default model. Caller specifies model via Agent tool's `model` parameter per invocation.
 - D-05: Custom agents own reusable behavior; invoking skills steer each use; orchestrating-agents supplies context by agent type and mode. (0004)
-- D-06: Planner remains read-only, plan-only, and message-based. Separate future agents own implementation and code/PR review. RECHECK: end-to-end planning test shows excessive proposal context. (0004)
 - D-07: Shared host instructions live in `GLOBAL_CLAUDE.md`; repo instructions live in `CLAUDE.md`, with tracked `AGENTS.md -> CLAUDE.md`. Global host links must target `GLOBAL_CLAUDE.md`. (0004)
+- D-08: General-purpose workers use identical bodies with inherited tools and preloaded `antipatterning`; separate high/max definitions select effort. Workers propose new antipatterns but never record them without permission. (0004)
+- D-09: Planner remains the plan-review specialist. Read-only reviewer handles general artifacts, may review plans after caller confirms routing, and performs its own discovery. Committed branch/PR review uses `reviewing-code`; standalone or uncommitted code uses general artifact review. Delegated reviews return state proposals; only direct reviews write journals. (0004)
 
 ## Questions
 

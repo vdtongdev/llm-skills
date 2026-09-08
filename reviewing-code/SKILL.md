@@ -1,13 +1,20 @@
 ---
 name: reviewing-code
-description: Multi-pass code review of a branch before merge. Use when the user asks for a code review, MR/PR review, security audit, or pre-merge check on a branch or diff. Triggers on "review this branch", "review the MR/PR", "audit before merge", "security review", "look for issues before I merge". Also use proactively before declaring a feature ready for PR.
+description: Multi-pass code review of a committed branch range or pull request before merge. Use for MR/PR review, branch security audit, or pre-merge checks with a valid base and head. Do not use for standalone files or uncommitted diffs. Also use proactively before declaring a committed feature branch ready for PR.
 ---
 
 # Reviewing Code
 
 Multi-pass review of a branch's changes. Reads files fully, checks against project antipatterns, produces structured findings with severity. Does not fix — that's a separate task.
 
-May span multiple sessions. Hand off via `journaling-session-memory`.
+May span multiple sessions. Direct reviews use `journaling-session-memory`; delegated reviews return state proposals.
+
+## Review State Ownership
+
+Choose the state path from the execution context:
+
+- **Direct review**: Use `journaling-session-memory` to write review checkpoints and the final Handoff.
+- **Delegated review**: Do not edit session journals, `COMMON.md`, or task files. Keep state in context. Return a complete review-state and journal proposal at completion, interruption, or an orchestrator-requested checkpoint.
 
 ## Project Configuration
 
@@ -36,7 +43,7 @@ Read these from the project instructions before Setup.
 
    For these, inspect the source/config that produced them if relevant (e.g., `pyproject.toml` change behind a `uv.lock` diff), not the artifact itself.
 
-3. Build a **review checklist** — one `[ ]` per changed file, grouped by pass. Write it to the current session journal file immediately (via `journaling-session-memory`, checkpoint mode). Example:
+3. Build a **review checklist** — one `[ ]` per changed file, grouped by pass. Direct reviews write it through `journaling-session-memory`. Delegated reviews retain it for their final review-state proposal. Example:
 
    ```
    ## Review Checklist
@@ -188,20 +195,22 @@ Rules:
 
 See `references/finding-template.md` for the per-finding format, summary table, and deduplication pattern.
 
-## Multi-Session Handoff
+## Resume State
 
-When a review spans sessions, the session file's Handoff Capsule must include:
+When a direct review spans sessions, the session Handoff must include:
 
 1. **Review Checklist** — with `[x]` marks
 2. **Findings so far** — full text, not abbreviated
 3. **Current pass** — which pass is in progress
 4. **Dependency notes** — cross-cutting items flagged for Pass 6
 
-Findings are evidence, not narrative: append each one to Milestones as it is found, so an unclean shutdown does not lose it. The capsule is the resume surface.
+Checkpoint each finding through `journaling-session-memory` so an unclean shutdown does not lose it. The Handoff is the resume surface.
 
-Next session resumes from the checklist — do not re-run `git diff` or re-read completed files **unless** Pass 6 dependency tracing requires reopening an earlier file, or the capsule is suspect.
+A delegated reviewer does not write the Handoff. At completion, interruption, or an orchestrator-requested checkpoint, return the same fields under `Review state proposal`. Include findings in the accompanying Journal proposal. The orchestrator owns persistence.
 
-**On resume, validate the capsule first.** If the Review Checklist is missing, the listed files don't match current `git diff`, or the session file's `branch:`/`head:` frontmatter differs from `HEAD`, stop and rebuild from Setup instead of resuming.
+Resume from the checklist. Do not re-run `git diff` or re-read completed files **unless** Pass 6 dependency tracing requires reopening an earlier file, or the supplied state is suspect.
+
+**On resume, validate the state first.** If the checklist is missing, its files differ from the current diff, or its branch or HEAD differs, rebuild from Setup.
 
 ## Rules
 
@@ -212,3 +221,4 @@ Next session resumes from the checklist — do not re-run `git diff` or re-read 
 - **Deduplicate.** One pattern, one finding, all locations.
 - **No style nits.** Missing docstrings, naming preferences, formatting are not findings.
 - **Be specific.** File path + line number + quoted code. For structural findings spanning a function, cite `function_name (file.py:NN-MM)` with a short excerpt. "Some endpoints might have issues" is not a finding.
+- **Respect state ownership.** Direct reviews write checkpoints. Delegated reviews return proposals and never edit journals, `COMMON.md`, or task files.

@@ -2,9 +2,9 @@
 id: 0004
 slug: planning-agent-refactor
 started: 2026-09-08
-finalized: false
+finalized: true
 branch: master
-head:
+head: facb629
 tasks: []
 topics: [planning-tasks, orchestrating-agents, skill-repository]
 ---
@@ -40,3 +40,37 @@ topics: [planning-tasks, orchestrating-agents, skill-repository]
 - discovered: `~/.agents/skills/GLOBAL_CLAUDE.md` does not exist before Git synchronization. Keep `~/.codex/AGENTS.md` on its working target until the draft is committed and mirrored.
 - discovered: adversarial review found existing installations would lose Codex global rules after mirror synchronization unless `~/.codex/AGENTS.md` is repointed.
 - done: `README.md` - added ordered migration steps for existing Claude and Codex instruction links.
+- decision: create separate high-effort and maximum-effort general-purpose workers with identical behavior, inherited tools, and preloaded `antipatterning`.
+- done: `.agents-claude/general-purpose-high.md` and `.agents-claude/general-purpose-max.md` - added bounded implementation workers that report possible antipattern additions instead of writing them without permission.
+- decision: reviewer performs its own read-only discovery. Planner remains the preferred plan reviewer, but reviewer may inspect plans after confirming intentional routing.
+- decision: `reviewing-code` owns code-review workflow; `reviewer` owns stable review behavior and routing. Direct reviews write journal checkpoints; delegated reviews return state proposals to the orchestrator.
+- done: `.agents-claude/reviewer.md`, `reviewing-code/SKILL.md`, and `orchestrating-agents/SKILL.md` - added the general reviewer and aligned delegated review state ownership.
+- decision: D-06 replaced by D-09 because the separate reviewer now exists and may review plans after explicit routing confirmation.
+- discovered: independent review found mismatched delegated checkpoint cadence, unsupported standalone-code routing, undefined general-artifact severity, and missing D-06 replacement evidence.
+- done: `.agents-claude/reviewer.md`, `reviewing-code/SKILL.md`, and `orchestrating-agents/SKILL.md` - aligned proposal timing, narrowed branch-only skill routing, and made generic severity rubric-owned.
+- correction: D-09's earlier `reviewing-code` route was too broad. Only committed branch ranges and pull requests use the skill; standalone or uncommitted code uses general artifact review.
+- done: focused adversarial re-review passed after all reviewer routing and state-ownership findings were corrected.
+- done: validation parsed every Claude agent frontmatter, confirmed symlink visibility, and passed `git diff --check`.
+
+## Handoff
+
+### Work
+
+- [x] `planning-tasks/`, `orchestrating-agents/`, and `.agents-claude/{discoverer,planner,task-writer}.md`: planning workflow delegated to standalone agents and committed.
+- [x] `CLAUDE.md`, `GLOBAL_CLAUDE.md`, and `README.md`: repository and global instructions split, committed, and pushed as `facb629`.
+- [ ] `.agents-claude/general-purpose-high.md` and `.agents-claude/general-purpose-max.md`: review and commit the new implementation workers.
+- [ ] `.agents-claude/reviewer.md`, `reviewing-code/SKILL.md`, and `orchestrating-agents/SKILL.md`: review and commit the general reviewer integration.
+- [ ] `context/session_states/COMMON.md` and this session file: commit their pending worker and reviewer decisions with the agent changes.
+- [ ] `~/.agents/skills` and `~/.codex/AGENTS.md`: synchronize the next commit, then repoint Codex to `~/.agents/skills/GLOBAL_CLAUDE.md`.
+
+### Next
+
+1. Review the uncommitted worker, reviewer, and skill changes.
+2. Commit and push the accepted files.
+3. Pull `~/.agents/skills` with `--ff-only` and repoint `~/.codex/AGENTS.md` to `GLOBAL_CLAUDE.md`.
+
+### State
+
+- tree: dirty - four modified files and three untracked agent definitions
+- load: `orchestrating-agents`, `reviewing-code`, `.agents-claude/reviewer.md`, `.agents-claude/general-purpose-high.md`, `.agents-claude/general-purpose-max.md`
+- retrieve: D-08, D-09, `Review State Ownership`, `Route the Review`
