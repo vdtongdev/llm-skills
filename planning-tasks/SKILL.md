@@ -11,6 +11,8 @@ Plan first, build second. The planning model researches the codebase, settles de
 
 ## Workflow
 
+Use native agent tools. If cross-provider models are unavailable, use distinct available models and disclose the limitation.
+
 ### 1. Clarify Scope with User
 
 Understand what the user wants, what they don't want, and what's ambiguous. A discussion, not a survey.
@@ -29,40 +31,94 @@ Don't force answers. If the user says "just do X," that's enough context for X.
 
 Understand the current state before planning changes.
 
-**Few files (< 5):** Read them directly.
+**Few files (< 5):** Read directly.
 
-**Broad scan (many files, unclear structure):** Dispatch a read-only Explore subagent through the active host's native subagent mechanism. Give it this prompt:
+**Broad scan (many files, unclear structure):** Dispatch one or more `discoverer` subagents with the `orchestrating-agents` context profile. Split by concern area when the scan spans multiple subsystems. Default to one agent.
 
-```text
-Read the project structure doc first, if one exists. Then find [what you need].
-Report exact paths, symbols, and evidence. Do not edit files.
-```
+Each agent receives a prompt naming its search focus and any structure doc the project instructions reference. The agent returns a structured report (existing patterns, reusable code, test fixtures, anti-pattern findings).
 
-If the project instructions reference a structure doc (e.g., `FILE_STRUCTURE.md`), tell the subagent to read it first. Use a model capable of nuanced codebase research.
+If the `discoverer` agent is not available, fall back to the built-in `Explore` agent.
 
 **If research reveals the feature already exists** (fully or partially), surface this to the user before continuing. Don't write a PRD for existing code.
 
-**What to capture from research:**
+**Reuse is mandatory.** Search for existing functions, utilities, and patterns that serve the feature's needs. Do not propose new code when a suitable implementation already exists.
 
-- Exact file paths and function signatures of code you'll modify
+**Anti-pattern recall:** If the project has an anti-pattern registry (`.antipatterns/` or equivalent, via `antipatterning`), recall by topic and path for the feature's area before designing.
+
+**Write the exploration doc.** Consolidate all research (direct reads and subagent reports) into `context/exploration-<feature>.md`. This file is the single input for downstream planners in §3. Include:
+
+- Exact file paths and function signatures of code to modify
 - Existing patterns the new code should follow (reference specific files)
-- Available fixtures, helpers, utilities to reuse
-- Current state of the UI if frontend work (read templates + components)
+- Reusable fixtures, helpers, and utilities found
+- Current UI state if frontend work (templates, components)
+- Anti-pattern findings
 
-**Anti-pattern recall:** If the project has an anti-pattern registry (`.antipatterns/` or equivalent, via `/antipatterning`), recall by topic and path for the feature's area before designing. A known trap found during planning is a design constraint; the same trap found during implementation is rework.
+### 3. Competing Designs
 
-### 3. Design Decisions
+Generate at least two design proposals from different providers before settling decisions. A single designer shares its own blind spots. Cross-provider proposals surface different assumptions, tradeoffs, and failure modes at low cost.
 
-Settle all architectural and design questions in this phase. The executor should not be inventing:
+**When to skip:** If §2 read fewer than 5 files and the design has no real decision points, the main agent settles the design directly. Do not spawn planners for a single-endpoint CRUD addition with no ambiguity.
+
+#### 3a. Spawn planners
+
+Read `references/planner-prompt-templates.md` before the first planner dispatch. Use its matching mode for every initial or follow-up prompt.
+
+1. Choose 2-3 models from different providers in the host's subagent model list. Spawn each as a `planner` agent with a model override and the `orchestrating-agents` `planner/proposal` context profile.
+2. Each planner receives in its prompt:
+   - Path to the exploration doc from §2 (the planner reads it directly; do not re-serialize exploration into the prompt)
+   - Path to the PRD template (`references/prd-template.md`)
+   - The user's requirements from §1, summarized by the main agent
+   - A design axis to emphasize (see below)
+   - The list of decisions that must be settled (see below)
+3. Launch all planners in parallel.
+
+**Design axes** (assign one per planner, adapt to the task type):
+
+- New feature: simplicity vs. performance vs. maintainability
+- Bug fix: root cause vs. workaround vs. prevention
+- Refactoring: minimal change vs. clean architecture
+
+**Decisions that must be settled.** The executor should not be inventing:
 
 - API endpoint shape (URL, method, request/response schema)
 - Database query approach
 - Component structure and state
-- HTML layout and testability attributes (e.g., data-testid names) — these must be decided at design time, not left to the implementer
+- HTML layout and testability attributes (e.g., data-testid names)
+
+Adapt this list to the project's domain.
 
 If the project instructions reference a style guide or design skill, read/use them here and capture the result in the PRD. If no style guide exists, follow standard language/framework conventions and note your choices in the PRD.
 
-**Complex logic:** Use pseudocode to convey ideas when the approach isn't obvious. Don't dictate every line — the executor needs room to adapt when reality differs from the plan.
+**Complex logic:** Use pseudocode when the approach is not obvious. Do not dictate every line - the executor needs room to adapt when reality differs from the plan.
+
+#### 3b. Resolve questions
+
+After all planners return, collect their Questions sections. Answer what the main agent can answer from §1 context. Anything the main agent cannot answer satisfactorily, elevate to the user. Re-invoke each planner that had open questions with the answers, so they can update their proposals.
+
+A planner may push back on an answer it finds unsatisfying and request user elevation. The main agent must comply.
+
+#### 3c. Peer review (up to 3 rounds)
+
+Planners review each other's proposals directly. The main agent orchestrates by passing proposals between them.
+
+**Round flow:**
+
+1. Send each planner the other planners' proposals in `Peer Review` mode. Paste the full proposal text because planners are read-only.
+2. Collect reviews. Send each planner the critiques it received. The planner responds with Agree/Disagree/Questions and re-emits its proposal only when it changes.
+3. Resolve new Questions through §3b. If no Disagree or Questions remain, or 3 rounds have passed, stop. Otherwise repeat from step 1 with updated proposals.
+
+**Addressing planners:** Each parallel spawn gets a unique agent name (e.g., `planner-simplicity`, `planner-performance`). Use SendMessage to continue an existing planner across rounds rather than spawning fresh agents. This preserves context and avoids re-priming.
+
+**Convergence:** Planners may concede points during review. Full agreement requires no `Disagree` or `Questions` items.
+
+#### 3d. Disagreement report
+
+After peer review ends, the main agent reads all final proposals and writes:
+
+- **Agreements:** Where all planners converge, one merged statement.
+- **Deltas:** Each standing disagreement itemized: the decision, each option with its reasoning, and the main agent's recommendation based on user intent from §1.
+
+Present the report to the user. The user rules on each delta. Rulings (as "Ruled: [decision], because [reason]") feed §4 and any later planner re-invocations.
 
 ### 4. Write the PRD
 
@@ -70,51 +126,50 @@ See `references/prd-template.md` for the full template with examples.
 
 **Where to save:** Check the project instructions first for a canonical PRD path. Default: `context/prd-<feature-name>.md` — create the `context/` directory if it doesn't exist.
 
+When §3 produces a proposal choice or user ruling, create `<resolved-prd-path-without-.md>-decisions.md` before review. Record selected and rejected choices with the decision fields in §5c. If §3 had no decision points, later review prompts state `Decision record: none`.
+
 ### 5. Review the Plan
 
-Two passes, different failure modes.
+Reuse planner agents from §3. If §3 spawned none, spawn one `planner` with the `orchestrating-agents` `planner/plan review` context profile. Give a new reviewer the PRD, matching review rubric, decision record or `none`, and every `Ruled` line.
 
-#### 5a. Completeness Review (native subagent)
+#### 5a. Completeness Review
 
-Catches document-QA issues: TODOs, vague paths, missing signatures, untestable cases. See `references/plan-reviewer-prompt.md`.
+Catches document-QA issues: TODOs, vague paths, missing signatures, untestable cases.
 
-**Loop:**
-
-1. Dispatch reviewer with path to PRD
-2. If issues found: fix them, re-dispatch
-3. If approved: proceed to 5b
-4. Max 3 iterations — if still failing, surface to user
-
-Same agent that wrote the plan fixes it (preserves context).
-
-#### 5b. Adversarial Review (opposite provider, multi-round)
-
-Catches idea-level flaws: unvalidated assumptions, missing failure modes, scope bugs. See `references/adversarial-reviewer-prompt.md`.
-
-**Preconditions:**
-
-- PRD passed 5a
-- PRD contains Context Primer, Breadth Checklist, Key Assumptions, Known Risks sections
+**Preconditions:** PRD contains Context Primer, Breadth Checklist, Key Assumptions, Known Risks sections.
 
 **Loop:**
 
-1. Invoke the opposite-provider CLI with the full PRD text, using the host branch in `references/adversarial-reviewer-prompt.md`. Record the provider, session id, model when reported, and repo HEAD at pass start.
-2. The adversarial reviewer emits bundled, numbered findings plus any questions.
-3. Verify before triaging. The reviewer receives only the supplied PRD and is instructed not to inspect the repository, while the PRD's citations may be stale. Spot-check each quoted path, symbol, and line against the tree. Reject a finding built on a stale citation and fix the citation.
-4. Stop. Present findings to the user alongside any defects the primary agent found in the same pass. Self-disclosure is part of the round, not a favour.
-5. User decides: continue, stop, or update PRD now
-6. If continue: consolidate the PRD per 5c, re-run the scoped 5a, then draft an open-minded rebuttal and resume the explicit opposite-provider session per `references/adversarial-reviewer-prompt.md`.
-7. Repeat from step 2 until user stops
+1. Send the PRD to each planner agent in `Plan Completeness Review` mode. Include all Ruled lines from §3d.
+2. Collect reviews. If issues found: fix them in the PRD, re-send the updated sections.
+3. If approved by all planners: proceed to 5b.
+4. Max 3 iterations. If still failing, surface to user.
+
+The main agent fixes the PRD. Re-send only the updated sections and their direct dependents.
+
+#### 5b. Adversarial Review
+
+Catches idea-level flaws: unvalidated assumptions, missing failure modes, scope bugs.
+
+**Preconditions:** PRD passed 5a.
+
+**Loop:**
+
+1. Send the PRD plus the decision record to each planner agent in `Plan Adversarial Review` mode. Planners spot-check file paths and signatures against the tree.
+2. Planners emit numbered findings and questions.
+3. Main agent verifies findings against the codebase. Reject findings built on stale citations and fix the citations.
+4. Present findings to the user alongside any defects the main agent found. Self-disclosure is part of the round, not a favour.
+5. User decides: continue, stop, or update PRD now.
+6. If continue: consolidate per 5c, re-run scoped 5a on edited sections, then re-send to planners with the new text marked.
+7. Repeat from step 2 until user stops.
 
 No round cap. User judges.
 
-**Scope each round at the previous round's new text.** A fix written into the PRD is unreviewed prose. Tell the adversarial reviewer where the new text is.
+**Scope each round at the previous round's new text.** A fix written into the PRD is unreviewed prose. Tell planners where the new text is.
 
-**Resume mechanics:** always use the explicit session id. Follow the provider-specific command and id-verification rules in `references/adversarial-reviewer-prompt.md`.
+**Primary agent's role:** attorney, not postman. Be open-minded, agree when sensible, and push back with evidence when not. If a planner asks a codebase question, the main agent reads and answers.
 
-**Primary agent's role:** attorney, not postman. Be open-minded, agree when sensible, and push back with evidence when not. If the reviewer asks a codebase question, the primary agent reads and answers.
-
-**After user stops:** the primary agent summarizes standing findings into conceded / disputed / accepted-risk and updates the PRD per the user's rulings.
+**After user stops:** the main agent summarizes standing findings into conceded / disputed / accepted-risk and updates the PRD per the user's rulings.
 
 #### 5c. Consolidate the PRD After Each Round
 
@@ -161,24 +216,11 @@ Send 5b the PRD plus this register. Never the deliberation transcript - it ancho
 
 ### 6. Create Tasks
 
-**If the user opts out of task creation, or `.tasks/` is absent and the user does not want managing-tasks enabled:** The PRD with its file list and test plan is the deliverable. Skip the rest of this section.
+**If the user opts out of task creation, or `.tasks/` is absent and the user does not want managing-tasks enabled:** The PRD with its file list and test plan is the deliverable. Skip this section.
 
-Otherwise, write one task file per task into `.tasks/` from the PRD's Implementation Details section, then run `task verify`.
+**Before spawning:** Resolve the project's testing conventions. Read the project instructions for a per-layer testing policy. If the project declares none, ask the user once and offer to write the answer into the project instructions. Do not silently default.
 
-**Per-task quality gates (enforce before submit):**
-
-- `title` — imperative, specific, one line
-- `goal` — one sentence answering "what capability does this add"
-- `files` — ≥1 entry, each with `path`, `kind` (`create`|`modify`|`delete`), and ≥1 `changes` bullet
-- `tests` - required for any task that writes production code, unless its layer's convention is `tests-after` or `none` (see the TDD gate below). Otherwise, at least one of `tests` OR `notes` populated
-- **TDD shape** - blocking. See below
-- `sources` — ≥1 entry pointing back to the PRD (e.g., `kind: prd, ref: context/prd-X.md#section-name`)
-- `context` - optional. What the executor must read or activate *beyond* what the task's `kind` resolves to. Each entry is `kind` (`file`|`skill`|`doc`), `ref`, one-clause `why`. Anything identical on every task of the layer goes in the project's task-kinds table instead
-- `kind` — optional but encouraged. The task's skill-domain (`coding`, `testing`, `docs`, `infra`), taken from the project's task-kinds table vocabulary; omit if the project defines no table. For a task that writes both code and its tests, use the dominant domain (usually `coding`). Not to be confused with `subtasks[].kind` (RED/GREEN phase)
-
-**The TDD gate (blocking):**
-
-When breaking down tasks, take the project's testing conventions into account. They are normally written in the project instructions, and they decide this gate. A useful shape, if the project has not already declared one:
+A useful default shape, if the project has not already declared one:
 
 | Layer               | Policy         |
 | ------------------- | -------------- |
@@ -187,86 +229,18 @@ When breaking down tasks, take the project's testing conventions into account. T
 | e2e                 | tests-after    |
 | docs, infra         | none           |
 
-- `tdd` - a RED subtask ordered before a GREEN subtask. Test-first is mandatory. Encode the phase as `subtasks[].kind`; each subtask carries its own `status`.
-- `tests-required` - tests ship in the same task, ordering not mandated. Fits frontend behaviour, where state transitions and error states are specifiable in advance but layout is discovered while building.
-- `tests-after` / `none` - no test subtask required. E2E normally lands here; follow whatever the project says.
+**Spawn the `task-writer` agent** with:
+- Path to the PRD
+- The resolved testing policy per layer
+- Path to project instructions (if any)
+- Task contract: `~/.claude/skills/managing-tasks/references/integration-contract.md`
+- Quality checklist: `~/.claude/skills/planning-tasks/references/managing-tasks-integration.md`
+- Canonical executable: `~/.claude/skills/managing-tasks/bin/task`
+- Owned `.tasks/` paths and forbidden write paths
 
-**Determine which tasks the gate applies to from `files[]`, not from a judgement call.** A task whose `files[]` include production code paths is in scope. Do not let the breakdown assert its own exemption.
+The agent reads the PRD and both contracts, writes `.tasks/` files, runs the canonical task executable, and reports the dependency graph and testing compliance summary. The quality checklist owns granularity, dependency, and testing rules. The task contract owns schema and submission rules.
 
-**Every in-scope task satisfies exactly one of:**
-
-- **a.** RED/GREEN subtasks in the same task, RED ordered before GREEN (policy `tdd`)
-- **b.** a `tests[]` list naming the cases, in the same task (policy `tests-required`)
-- **c.** a `notes` entry naming the deviation and why, where the task departs from its layer's declared convention. Prefix it `test-exempt:` so it is greppable and conspicuous in review
-
-Silence is not option (c). A production-code task with no subtasks, no `tests[]` and no stated deviation fails the gate and is not submitted.
-
-**If the project declares no testing convention, ask the user once** before writing the task files, and offer to write the answer into the project instructions. Do not silently default in either direction.
-
-**Granularity rules:**
-
-- Split any task that touches 3+ files AND has >5 total change bullets.
-- Split per subsystem when a PRD section spans backend/frontend/tests/infra — one task per subsystem.
-
-**Dependency derivation rules:**
-
-- If task A creates a file task B references, B `depends_on: [A]`.
-- If task A's backend work must land before task B's frontend consumes it, B depends on A.
-- Under a `tdd` policy, tests come FIRST. Keep them as RED/GREEN subtasks inside one task, which order by position rather than by deps. Do not split the failing test into its own task that the coding task depends on: that task can never reach `done`, because its test is meant to stay red until the next task lands.
-- Under `tests-after`, a separate test task may depend on the production task. Never under `tdd` - a test task depending on production code is test-after by construction.
-- No implicit "last-added-depends-on-previous" chain. Every dep is explicit and reason-backed.
-
-**Task file format & submission:**
-
-Write one `.tasks/NNN-<slug>.yaml` file per task, directly. Full schema, envelope formats, and allocation rules for `id`, `NNN`, and `uid`: `../managing-tasks/references/integration-contract.md` - that file is authoritative. `references/managing-tasks-integration.md` carries only this skill's per-task quality checklist.
-
-Get `uid` values from `task get-new-uid --count <n>`. Never hand-write one.
-
-Resolve `depends_on` to real task ids as you write: a dep is the id of a task that already exists or that this run is creating.
-
-Present the written tasks to the user for review - show the computed dep graph, plus a TDD compliance summary so a cheap exemption is conspicuous rather than buried. Derive it by counting the tasks you just wrote:
-
-```
-Production-code tasks: 14
-  RED/GREEN (tdd):             11
-  tests[] (tests-required):     2
-  Deviations needing approval:  1
-    - add-session-guard: test-exempt: migration-only, verified by alembic check
-```
-
-A task in none of those three buckets is a gate failure, not a fourth bucket. Fix it before presenting.
-
-User may edit the files before you verify.
-
-**Planning is not done until `task verify` exits 0.** Run it after writing the files:
-
-- Exit 0: planning done.
-- Exit 4: fix the files named in `problems[]` and re-run. Direct writes are not atomic, so fix forward - there is nothing to roll back.
-
-Problem kinds and per-exit-code handling: the contract's § Producer-side patterns.
-
-Example TDD subtask split inside a task file:
-
-```yaml
-  title: Add POST /rules endpoint
-  goal: Expose rule creation to clients.
-  files:
-    - path: backend/routers/rules.py
-      kind: create
-      changes: [add create_rule handler returning 201]
-  subtasks:
-    - id: "1.1"
-      kind: RED
-      status: pending
-      title: failing test for create_rule returning 201 with new ID
-    - id: "1.2"
-      kind: GREEN
-      status: pending
-      title: implement create_rule handler
-  sources:
-    - kind: prd
-      ref: context/prd-rules.md#implementation-details-backend
-```
+**Planning is done when `~/.claude/skills/managing-tasks/bin/task verify` exits 0.**
 
 ## What Makes a Good Plan
 

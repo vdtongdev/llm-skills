@@ -1,4 +1,4 @@
-# Personal Agent Skills
+# Personal Agent Skills and Subagents
 
 This private repository is the shared source for Claude Code and Codex skills. Edit and commit only in `~/.claude/skills`; the Codex checkout is a read-only mirror updated through Git.
 
@@ -10,12 +10,15 @@ Clone this repository to `~/.claude/skills` first. Then run:
 mkdir -p ~/.agents ~/.codex
 git clone "$(git -C ~/.claude/skills remote get-url origin)" ~/.agents/skills
 ln -s ~/.agents/skills/CLAUDE.md ~/.codex/AGENTS.md
+ln -s skills/.agents-claude ~/.claude/agents
 npm ci --prefix ~/.claude/skills/managing-tasks
 ```
 
-`ln -s` refuses an existing `~/.codex/AGENTS.md`; inspect that path and resolve the conflict manually instead of overwriting it.
+`ln -s` refuses existing targets. Inspect `~/.codex/AGENTS.md` or `~/.claude/agents` and resolve conflicts manually. Do not overwrite them.
 
 Claude Code reads skills from `~/.claude/skills`. Codex reads the mirror from `~/.agents/skills`. Both use the same committed `SKILL.md` files and resources.
+
+Claude Code reads personal subagents through `~/.claude/agents`. That path links to the tracked `.agents-claude/` directory in this repository.
 
 ## Synchronize committed changes
 

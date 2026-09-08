@@ -11,7 +11,7 @@ here that appears to contradict it is stale and the contract wins.
 
 ## Per-task quality checklist
 
-Enforce every item before writing the task files. If any fails, fix the PRD + the task, don't push the work onto the executor.
+Enforce every item before writing task files. If the PRD fails a gate, report the blocking defect to the main agent and wait for a corrected PRD. Fix defects in task files directly.
 
 | Field | Gate |
 |---|---|
@@ -24,8 +24,18 @@ Enforce every item before writing the task files. If any fails, fix the PRD + th
 | `kind` (task) | Optional but encouraged. Skill-domain (`coding`/`testing`/`docs`/...) from the project instructions task-kinds table. Dominant domain for mixed tasks. Distinct from `subtasks[].kind` (RED/GREEN phase). |
 | Granularity | Split if >3 files AND >5 total change bullets. Split per subsystem. |
 | Deps | Every `depends_on` reason-backed. No implicit chains. `depends_on_uids` positionally aligned with it. |
-| TDD shape | **Blocking.** Scope is decided by `files[]` (does the task write production code?), not by the breakdown's own assertion. Each in-scope task satisfies exactly one of: RED/GREEN subtasks with RED first (`tdd`); a populated `tests[]` (`tests-required`); or a `notes` entry naming a deviation from its layer's declared convention, prefixed `test-exempt:` so it is greppable. Silence is not a deviation. See `SKILL.md` § The TDD gate. |
+| Testing shape | **Blocking.** Scope is decided by `files[]`, not by the task's own assertion. Every production task follows its layer policy below or has a `test-exempt:` note naming a deviation. Silence is not a deviation. |
 | Testing convention | Read the project's testing conventions, normally in its project instructions, and apply them per layer. If the project declares none, ask the user before writing the tasks. Do not default silently. |
+
+## Testing policy values
+
+- `tdd`: Put RED and GREEN subtasks in the production task, with RED first.
+- `tests-required`: Populate `tests[]` in the production task. Ordering is not fixed.
+- `tests-after`: Create a separate test task that depends on the production task.
+- `none`: No test task or test entry is required.
+- Deviation: Add a `test-exempt:` note that names the policy and reason.
+
+Report the number of production tasks in each policy bucket and list every deviation. A task that matches no policy is a gate failure.
 
 ## Drift handling
 

@@ -118,6 +118,7 @@ must land in ONE commit to keep the tree consistent. Ordering that follows plain
 - Test cases (input -> expected status + response/result)
 - E2E / integration test cases (action -> expected outcome)
 - Fixtures to use or create
+- Manual verification steps (run the app, use the feature, check the output)
 
 ### Patterns to Follow
 

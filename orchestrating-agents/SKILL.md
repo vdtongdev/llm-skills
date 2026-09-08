@@ -1,11 +1,26 @@
 ---
 name: orchestrating-agents
-description: Coordinate work through an orchestrator, task workers, and one independent adversarial reviewer. Use when the user requests an orchestrator, coordinator-style execution, delegation, subagents, parallel agents, or execution of a non-trivial planning-tasks and managing-tasks task graph. Keep genuinely small tasks with the orchestrator; use workers plus serial reviewing-code review for other work.
+description: Coordinate planning and implementation through a main orchestrator and specialized subagents. Use for delegation, parallel agents, planner groups, task workers, or reviewed task-graph execution. Keep genuinely small tasks with the orchestrator.
 ---
 
 # Orchestrating Agents
 
 Remain the user's single coordinator. Own scheduling, context, journal state, Git integration, review adjudication, and the final claim. Delegation never transfers accountability.
+
+## Route Context by Agent Type
+
+Agent definitions own stable expertise, tool limits, modes, and output contracts. The invoking skill owns workflow order and task-specific gates. This skill owns context selection, dispatch, ownership, and lifecycle. Do not copy an agent's stable behavior into its dispatch prompt.
+
+Every dispatch names the objective, mode, source paths, settled user decisions, owned paths or read-only boundary, required checks, expected deliverable, and escalation triggers. Add the matching context:
+
+- **Discoverer**: search focus and breadth; project structure docs; relevant registries; evidence required from code and tests.
+- **Planner / proposal**: user requirements; exploration artifact; design axis; decisions to settle; plan template and design rules.
+- **Planner / plan review**: plan artifact; review mode and rubric; decision record; settled rulings; code paths allowed only for citation checks.
+- **Task writer**: approved plan; testing policy by layer; project instructions; task schema and quality contracts; owned `.tasks/` paths; verification command.
+- **Worker**: task or assignment; definition of done; project rules; implementation evidence; owned and forbidden paths; required checks.
+- **Code or PR reviewer**: stable artifact; accepted objective; base and head; review skill; project rules and relevant registries. Do not include worker conclusions or a preferred verdict.
+
+Planning dispatches remain under `planning-tasks`. They do not enter the implementation task suite, use worker journal proposals, stage changes, or trigger the serial code-review gate. The main agent still owns user questions, rulings, synthesis, plan files, task acceptance, and journal state.
 
 ## Choose the Execution Shape
 
@@ -16,7 +31,7 @@ Handle work directly only when all are true:
 - low-risk, reversible changes with limited shared-state effects
 - dispatch and reintegration would cost more than implementation
 
-Otherwise use three distinct roles:
+For implementation, use three distinct roles:
 
 1. **Worker**: implement or investigate one assigned task; verify the result.
 2. **Reviewer**: invoke `reviewing-code` and criticize the stable batch independently and adversarially; never implement fixes.
@@ -68,11 +83,11 @@ Spawn more than one worker when useful and capacity permits. Keep one worker per
 
 After each wave, integrate results, refresh tracker state, and recalculate the ready set. Do not run review between tasks or waves.
 
-## Onboard Every Subagent
+## Onboard Implementation Agents
 
 Before spawning a wave, checkpoint the orchestrator's active session through `journaling-session-memory`.
 
-Every new worker and reviewer performs read-only delegated onboarding before task work:
+Every new implementation worker and code/PR reviewer performs read-only delegated onboarding before task work:
 
 1. Invoke `journaling-session-memory` and follow its onboarding retrieval order.
 2. Read `COMMON.md` whole.
@@ -80,7 +95,7 @@ Every new worker and reviewer performs read-only delegated onboarding before tas
 4. Read task-linked and topic-linked historical Handoffs only when relevant.
 5. Compare branch, HEAD, and working-tree state; report unexplained differences before editing or reviewing.
 
-Delegated agents do not create session files and do not edit session journals or `COMMON.md`. This single-writer adaptation avoids concurrent journal allocation and append races. The orchestrator owns all journal writes.
+These delegated agents do not create session files or edit session journals or `COMMON.md`. This single-writer adaptation avoids concurrent journal allocation and append races. The orchestrator owns all journal writes.
 
 ## Brief the Worker
 
@@ -107,7 +122,7 @@ Workers may edit only assigned working-tree paths. They never stage, commit, pus
 
 ## Receive Journal Proposals
 
-At every `journaling-session-memory` checkpoint trigger, the worker or reviewer sends patch-like proposals through its response or an agent message. Do not use line numbers; use paths, sections, task ids, and C/D/Q anchors that survive concurrent edits.
+At every `journaling-session-memory` checkpoint trigger, an implementation worker or code/PR reviewer sends patch-like proposals through its response or an agent message. Do not use line numbers; use paths, sections, task ids, and C/D/Q anchors that survive concurrent edits.
 
 Required proposal shape:
 
@@ -184,7 +199,7 @@ Before claiming completion, verify every item:
 - [ ] Untracked work was classified as small, medium, or heavy; medium work received one context-primed worker, and heavy work was offered `planning-tasks` when planning would reduce risk.
 - [ ] `task verify` passed when the task suite applies; every tracked worker invoked `managing-tasks`, ran `task show <id>` itself, and received one explicit ready task id. Untracked workers skipped tracker-only operations.
 - [ ] Parallel-wave tasks had disjoint dependencies, write surfaces, generated artifacts, and mutable runtime state.
-- [ ] Every subagent completed delegated onboarding before work.
+- [ ] Every implementation worker and code/PR reviewer completed delegated onboarding before work.
 - [ ] Every tracked worker resolved `kind`, invoked its mapped skill, and loaded the mapped document plus all `context[]` entries before editing.
 - [ ] Tracked workers maintained task state; all workers stopped on undeclared scope, shared state, escalation triggers, and third failed attempts.
 - [ ] Workers did not stage, commit, push, deploy, or communicate externally; the orchestrator staged explicit paths and created only authorized commits.
