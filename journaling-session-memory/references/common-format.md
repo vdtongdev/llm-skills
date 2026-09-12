@@ -102,7 +102,7 @@ Active cross-session retrieval routes only:
 
 ## Entry Lifecycle
 
-When work triggers `RECHECK` or touches an entry's subject, classify it at checkpoint:
+When work triggers `RECHECK` or touches an entry's subject, classify it at the next completed-goal checkpoint, completed-task checkpoint, or offboard:
 
 - `KEEP`: directive still binds; no write.
 - `CONDENSE`: rewrite the same anchor without changing meaning; no Log entry.

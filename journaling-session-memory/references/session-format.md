@@ -74,7 +74,7 @@ Omit empty optional lines and sections. Keep `Work`, `Next`, and `State`; write 
 
 ## Log
 
-- Append events while context is fresh. Never reorder or rewrite existing log entries.
+- Append events only at a completed-goal or completed-task checkpoint, or during offboard. Never reorder or rewrite existing Log entries.
 - Preserve rationale, rejected alternatives, invalidation evidence, and active-view retirement reasons here. COMMON keeps only current directives.
 - Task-scoped discoveries also go to the task note when `.tasks/` exists.
 - `retired`, `promoted`, and `correction` entries preserve history removed from COMMON.
@@ -89,9 +89,9 @@ Omit empty optional lines and sections. Keep `Work`, `Next`, and `State`; write 
 - `avoid` is required only without a task tracker; tracker projects keep failed approaches in task notes.
 - `retrieve` is optional and contains only terms a future archive search would not infer.
 
-## Correction Window
+## Corrections
 
-Only the active conversation that finalized the file may append `correction:` and refresh Handoff/frontmatter afterward. Any invocation entering through onboard creates a successor and records corrections there, even when no successor exists yet.
+A finalized session is immutable. A later continuation creates a successor through onboard. Record corrections in the successor at its next checkpoint or offboard.
 
 One mechanical exception exists: `compact-common.md` legacy Topic migration may add stable topic codes to named finalized sessions' frontmatter. Change no other frontmatter field and never edit their Logs or Handoffs. Record every backfill in the active successor.
 

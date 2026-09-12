@@ -1,17 +1,14 @@
-# Checkpoint - Record Hot State
+# Checkpoint - Record Completed Work
 
-Checkpoint when context is accurate and cheap. A crash should lose only work since the last meaningful event.
+Checkpoint only after a defined goal or task finishes. Batch its meaningful events into one checkpoint. Session end uses `offboard.md`.
 
 ## Triggers
 
-- User decision or correction
-- New constraint, failure mode, or project fact
-- Abandoned approach
-- Completed subtask or meaningful file group
-- Task or subsystem switch
-- Dependency, tool, configuration, migration, or workaround change
-- Before risky work
-- Low context: use `offboard.md` instead
+- Completed current user-authorized goal
+- Completed top-level tracker task
+- Completed explicit untracked assignment established before work started
+
+No other event triggers a checkpoint. Agent-created steps, subtasks, and file groups never qualify. Do not checkpoint decisions, discoveries, failures, switches, or risky work separately.
 
 ## 1. Append Session Log
 
@@ -27,17 +24,13 @@ Append 1-5 typed entries to the current session Log. Read `session-format.md` on
 
 Never reorder or rewrite earlier Log entries.
 
-## 2. Update Task-Owned State
+## 2. Preserve Task Ownership
 
-Skip without `.tasks/`.
-
-- Task-scoped discovery or failure: `task add-note <id> "<fact and root cause>"`.
-- Finished subtask: `task edit-subtask <parent> <subtask> --status done`.
-- Do not copy task status into COMMON.
+Do not mutate tracker state through this checkpoint. managing-tasks writes task notes and status changes when they occur. Read tracker state here only when the checkpoint needs it. Do not copy task status into COMMON.
 
 ## 3. Reconcile COMMON
 
-Derive touch keys from the event:
+Derive touch keys from the completed goal or task:
 
 - changed paths and symbols;
 - package, tool, service, or command names;
@@ -55,7 +48,7 @@ Search COMMON for those keys, then include any C/D/Q whose subject is affected w
 
 Never leave an affected entry unclassified.
 
-Fresh evidence from the current event is sufficient for invalidation or completion. Before retiring a still-true entry as local, self-evident, no longer cross-cutting, or unlikely to affect future action, read `compact-common.md` § Investigate Before Classifying and perform its targeted retrieval. This is semantic reconciliation, not a full budget pass.
+Fresh evidence from the completed work is sufficient for invalidation or completion. Before retiring a still-true entry as local, self-evident, no longer cross-cutting, or unlikely to affect future action, read `compact-common.md` § Investigate Before Classifying and perform its targeted retrieval. This is semantic reconciliation, not a full budget pass.
 
 Also reconcile hot project state:
 
@@ -70,4 +63,4 @@ Do not run the full word-budget pruning pass here.
 
 ## 4. Stop
 
-Do not write Handoff mid-session. Return to the active task.
+Do not write Handoff mid-session. Return to normal work or the next task.

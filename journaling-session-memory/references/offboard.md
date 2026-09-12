@@ -4,7 +4,7 @@ Resolve `<state-dir>` from the project override or default in SKILL.md. Low-cont
 
 ## 1. Finish the Session Log
 
-Append only meaningful events missed since the last checkpoint. Do not reconstruct detailed history from project files.
+Append meaningful events not recorded by a completed-goal or completed-task checkpoint. Summarize current memory; do not reconstruct detailed history from project files.
 
 If no current session file exists, create one from `session-format.md`, then write the smallest accurate Log possible.
 
@@ -38,11 +38,11 @@ Set:
 - current short `head`
 - current task ids and every topic code touched by the session
 
-This active conversation may append corrections and refresh Handoff after finalization. A later onboard always creates a successor. Never rewrite Log entries.
+Never edit a finalized session. A later continuation creates a successor through onboard. Record any correction in that successor at its next checkpoint or offboard.
 
 ## 4. Bounded COMMON Reconciliation
 
-Checkpoint should already own semantic reconciliation. At offboard:
+Completed-goal and completed-task checkpoints own semantic reconciliation for finished work. At offboard:
 
 1. Ensure active Topic definitions have stable codes and short scope/search descriptions; never add session ids or current status. Delete inactive definitions without a live task or C/D/Q route; keep historical session tags unchanged.
 2. Run `wc -w` on the resolved COMMON path and compare it with the declared budget.
@@ -60,11 +60,11 @@ Do not perform a broad pruning investigation under low context. Whenever an entr
 
 The next onboard performs evidence-based pruning before normal work.
 
-## 5. Sync Tracker Status
+## 5. Read Tracker Status
 
-Skip without `.tasks/`. Apply known status transitions only. Do not reconstruct missing task notes at offboard.
+Skip without `.tasks/`. Read current task state when Handoff needs it. Do not mutate or reconstruct task state during offboard.
 
-Critically low context: skip tracker sync and put the exact gap in Handoff Work.
+Critically low context: skip the tracker read and put the exact gap in Handoff Work.
 
 ## 6. Report
 

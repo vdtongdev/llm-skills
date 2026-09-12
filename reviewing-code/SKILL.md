@@ -13,8 +13,8 @@ May span multiple sessions. Direct reviews use `journaling-session-memory`; dele
 
 Choose the state path from the execution context:
 
-- **Direct review**: Use `journaling-session-memory` to write review checkpoints and the final Handoff.
-- **Delegated review**: Do not edit session journals, `COMMON.md`, or task files. Keep state in context. Return a complete review-state and journal proposal at completion, interruption, or an orchestrator-requested checkpoint.
+- **Direct review**: Keep review state in context. Use `journaling-session-memory` when the review task finishes or the session ends.
+- **Delegated review**: Do not edit session journals, `COMMON.md`, or task files. Keep state in context. Return a complete review-state and journal proposal when the review task finishes or hands off.
 
 ## Project Configuration
 
@@ -43,7 +43,7 @@ Read these from the project instructions before Setup.
 
    For these, inspect the source/config that produced them if relevant (e.g., `pyproject.toml` change behind a `uv.lock` diff), not the artifact itself.
 
-3. Build a **review checklist** — one `[ ]` per changed file, grouped by pass. Direct reviews write it through `journaling-session-memory`. Delegated reviews retain it for their final review-state proposal. Example:
+3. Build a **review checklist** — one `[ ]` per changed file, grouped by pass. Keep it in context until the completed review checkpoint or offboard. Delegated reviews retain it for their final review-state proposal. Example:
 
    ```
    ## Review Checklist
@@ -204,9 +204,9 @@ When a direct review spans sessions, the session Handoff must include:
 3. **Current pass** — which pass is in progress
 4. **Dependency notes** — cross-cutting items flagged for Pass 6
 
-Checkpoint each finding through `journaling-session-memory` so an unclean shutdown does not lose it. The Handoff is the resume surface.
+Keep each finding in context. Record all findings at the completed review checkpoint or offboard. The Handoff is the resume surface.
 
-A delegated reviewer does not write the Handoff. At completion, interruption, or an orchestrator-requested checkpoint, return the same fields under `Review state proposal`. Include findings in the accompanying Journal proposal. The orchestrator owns persistence.
+A delegated reviewer does not write the Handoff. When the review task finishes or hands off, return the same fields under `Review state proposal`. Include findings in the accompanying Journal proposal. The orchestrator owns persistence.
 
 Resume from the checklist. Do not re-run `git diff` or re-read completed files **unless** Pass 6 dependency tracing requires reopening an earlier file, or the supplied state is suspect.
 
@@ -221,4 +221,4 @@ Resume from the checklist. Do not re-run `git diff` or re-read completed files *
 - **Deduplicate.** One pattern, one finding, all locations.
 - **No style nits.** Missing docstrings, naming preferences, formatting are not findings.
 - **Be specific.** File path + line number + quoted code. For structural findings spanning a function, cite `function_name (file.py:NN-MM)` with a short excerpt. "Some endpoints might have issues" is not a finding.
-- **Respect state ownership.** Direct reviews write checkpoints. Delegated reviews return proposals and never edit journals, `COMMON.md`, or task files.
+- **Respect state ownership.** Direct reviews write only at completed review or offboard boundaries. Delegated reviews return proposals and never edit journals, `COMMON.md`, or task files.

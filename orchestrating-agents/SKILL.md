@@ -85,7 +85,7 @@ After each wave, integrate results, refresh tracker state, and recalculate the r
 
 ## Onboard Implementation Agents
 
-Before spawning a wave, checkpoint the orchestrator's active session through `journaling-session-memory`.
+Do not checkpoint merely because a worker wave is about to start. Journal boundaries remain completed goals, completed tasks, and session offboard.
 
 Every new implementation worker and code/PR reviewer performs read-only delegated onboarding before task work:
 
@@ -122,7 +122,7 @@ Workers may edit only assigned working-tree paths. They never stage, commit, pus
 
 ## Receive Journal Proposals
 
-At every `journaling-session-memory` checkpoint trigger, an implementation worker sends patch-like proposals through its response or an agent message. A delegated reviewer retains review state and returns complete proposals at completion, interruption, or an orchestrator-requested checkpoint. Do not use line numbers; use paths, sections, task ids, and C/D/Q anchors that survive concurrent edits.
+An implementation worker sends patch-like proposals when its assigned goal or task finishes. If its session ends first, it sends them during handoff. A delegated reviewer follows the same boundaries. Do not use line numbers; use paths, sections, task ids, and C/D/Q anchors that survive concurrent edits.
 
 Required proposal shape:
 
@@ -150,7 +150,7 @@ questions: <blocking questions or none>
 state: <tree, exceptional loads, and retrieval hints>
 ```
 
-The orchestrator verifies evidence, writes accepted task notes and Log entries promptly, and decides every COMMON action through `journaling-session-memory` checkpoint rules. Use `task: none` when no tracker task owns the evidence. For `ADD`, the subagent proposes a subject and text; the orchestrator allocates the new C/D/Q anchor after approval. It may accept, edit, or reject any proposal. Only the orchestrator writes task notes and edits session journals or `COMMON.md`; a proposal is never approval.
+The orchestrator verifies evidence and writes accepted task notes promptly. It batches accepted Log entries and COMMON actions into the next completed-goal checkpoint, completed-task checkpoint, or offboard. Use `task: none` when no tracker task owns the evidence. For `ADD`, the subagent proposes a subject and text; the orchestrator allocates the new C/D/Q anchor after approval. It may accept, edit, or reject any proposal. Only the orchestrator writes task notes and edits session journals or `COMMON.md`; a proposal is never approval.
 
 The orchestrator derives its final Handoff during offboard. It does not add a Handoff section mid-session merely because a worker returned Handoff facts.
 
@@ -187,7 +187,7 @@ For every finding:
 2. Classify it as accepted, rejected, duplicate, or user decision required.
 3. Return accepted implementation defects to a worker.
 4. Reverify fixes and resume the same reviewer for serial re-review of material changes.
-5. Record the ruling through task, journal, and COMMON proposal handling.
+5. Record task-owned state promptly. Batch journal and COMMON rulings into the next checkpoint or offboard.
 
 Resolve implementation disputes from source, tests, specifications, and reproducible behavior. Escalate user preferences, high-level design or architecture, meaningful scope changes, new authority, material risk acceptance, and conflicting requirements without authoritative precedence. Present options, evidence, and tradeoffs; do not choose for the user.
 
@@ -204,7 +204,7 @@ Before claiming completion, verify every item:
 - [ ] Tracked workers maintained task state; all workers stopped on undeclared scope, shared state, escalation triggers, and third failed attempts.
 - [ ] Workers did not stage, commit, push, deploy, or communicate externally; the orchestrator staged explicit paths and created only authorized commits.
 - [ ] The orchestrator checked one layer beyond each assignment and reconciled every worker's diff, checks, tracker state, and proposals.
-- [ ] Every worker checkpoint trigger produced all proposal fields. Delegated reviewers returned complete proposals at completion, interruption, or an orchestrator-requested checkpoint. Only the orchestrator wrote accepted task notes, session Log entries, and COMMON changes.
+- [ ] Every worker returned all proposal fields at its completed goal, completed task, or handoff. Only the orchestrator wrote accepted task notes, session Log entries, and COMMON changes.
 - [ ] Every accepted journal or COMMON edit has evidence and follows `journaling-session-memory` authority, including orchestrator allocation of new C/D/Q anchors.
 - [ ] The orchestrator committed the integrated stable batch before review or paused for commit authority.
 - [ ] One independent reviewer invoked `reviewing-code` against the stable committed batch; review agents and passes were not parallelized, and the reviewer never implemented fixes.

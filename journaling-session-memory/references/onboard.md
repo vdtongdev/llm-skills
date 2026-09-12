@@ -81,7 +81,7 @@ Recover cheapest first:
 2. Targeted `git diff <recorded-head>..HEAD` or working-tree diff.
 3. Relevant task notes.
 
-If evidence cannot reconstruct the state, report the gap and ask. Never inspect provider transcripts. Leave the old file unchanged; record reconstruction in the new session Log.
+If evidence cannot reconstruct the state, report the gap and ask. Never inspect provider transcripts. Leave the old file unchanged. Keep any reconstruction evidence in working memory until the next checkpoint or offboard.
 
 ## 5. Load Tracker State
 
@@ -122,11 +122,11 @@ Read `session-format.md`. Create the next numbered file immediately before imple
 - empty Log
 - no Handoff until offboard
 
-Record reconstruction notes now.
+Keep reconstruction notes in working memory until the next checkpoint or offboard.
 
 ## 9. Reconcile Recovery Evidence
 
-When Steps 3-5 found new or reconstructed evidence, derive its touched paths, dependencies, issue/task ids, workarounds, and `RECHECK` events. Apply checkpoint's COMMON classification now, even when COMMON is below target. Record every semantic C/D/Q change in the new session Log; wording-only `CONDENSE` edits need no entry.
+When Steps 3-5 found new or reconstructed evidence, derive its touched paths, dependencies, issue/task ids, workarounds, and `RECHECK` events. Keep the required COMMON classifications and Log entries in working memory. Apply them at the next checkpoint or offboard. Do not edit COMMON or the session Log during this recovery step.
 
 Skip only when recovery produced no new project evidence.
 

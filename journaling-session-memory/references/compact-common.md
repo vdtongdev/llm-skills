@@ -18,7 +18,7 @@ Compact COMMON as an intentionally lossy active view. Session Logs retain eviden
 3. Read `common-format.md`.
 4. Inventory each C/D/Q entry, Redirect, and Topic. Classify independent clauses separately when an entry mixes subjects.
 
-Never rewrite historical Logs. Record semantic removals in the active Log.
+Never rewrite historical Logs. Record semantic removals at the completed compaction checkpoint.
 
 ## Investigate Before Classifying
 
@@ -77,11 +77,11 @@ Preserve negation, quantities, scope, triggers, exceptions, accepted risks, migr
 
 - Keep one subject per entry; classify unrelated companion clauses independently.
 - When splitting, keep the old anchor only on a surviving clause that preserves its primary meaning. Allocate new anchors for other surviving clauses. If no clause preserves the meaning, retire the old anchor and allocate new anchors for every survivor.
-- Record the retained, retired, and newly anchored clauses in one `split:` Log entry. Add a Redirect only when a live non-archive reference still uses the old anchor.
+- Collect the retained, retired, and newly anchored clauses for one `split:` Log entry. Add a Redirect only when a live non-archive reference still uses the old anchor.
 - State directive, scope, trigger, exception, and recheck. Omit the argument.
 - Prefer one decisive source session over a development-history range.
 - Challenge every entry over 40 words for mixed subjects, duplicated authority, rationale, or runbook content. Length is a review trigger, not a hard limit.
-- Record each semantic retirement, replacement, or promotion by anchor and reason. Wording-only condensation needs no Log entry.
+- Collect each semantic retirement, replacement, or promotion by anchor and reason. Wording-only condensation needs no Log entry.
 
 ## Rebuild Topics as Forward Routes
 
@@ -108,13 +108,14 @@ For a legacy Topic that lists session ids:
 1. Treat the ids as migration input, not text to retain.
 2. Check each named session's Handoff or targeted Log evidence for contradiction. When evidence is absent, the legacy index itself is sufficient for mechanical migration; when evidence contradicts relevance, exclude that session and record why.
 3. Mechanically add the stable code to included sessions' frontmatter when absent; never edit their Logs or Handoffs.
-4. Record migrated and excluded session ids in the active Log.
+4. Collect migrated and excluded session ids for the completed compaction checkpoint.
 5. Replace the legacy line with code plus scope/search description.
 
 ## Finish
 
 1. Search live non-archive files for inbound references before deleting a Redirect.
 2. Verify every retained entry intrinsically belongs in global context. Retire subsystem-only facts only when artifacts or topic-tagged archive evidence make recovery adequate; the current session's subsystem is never evidence for retirement.
-3. Recount COMMON and aim below its target, not merely below hard.
-4. Check that condensation preserved every behavior-changing condition and exception.
-5. If still above target, report each blocking entry and why it cannot be reduced safely. Never use a blanket “nothing else can be compacted” claim.
+3. Append one batched Log update for all collected semantic changes and Topic migrations.
+4. Recount COMMON and aim below its target, not merely below hard.
+5. Check that condensation preserved every behavior-changing condition and exception.
+6. If still above target, report each blocking entry and why it cannot be reduced safely. Never use a blanket “nothing else can be compacted” claim.
