@@ -1,13 +1,13 @@
 ---
-name: managing-git-remote
+name: remoting-git
 description: Workflow for managing issues and merge/pull requests on git remote platforms (GitLab, GitHub). Use when creating MRs/PRs, refining issues, correlating work items to commits, updating issue descriptions, or closing issues. Triggers on "create MR", "merge request", "pull request", "close issue", "update issue", "prepare for merge", "glab", "gh pr", or any issue/MR/PR management task. Also use when wrapping up a feature branch or doing issue housekeeping.
 ---
 
-# Managing Git Remote
+# Remoting Git
 
 ## Load Project Config
 
-Check for a `managing-git-remote` section in the project instructions under `SKILL CONFIGURATION`. It should specify:
+Check for a `remoting-git` section in the project instructions under `SKILL CONFIGURATION`. It should specify:
 
 - **Platform** — GitLab or GitHub
 - **CLI tool** — `glab` or `gh`
@@ -17,7 +17,7 @@ Check for a `managing-git-remote` section in the project instructions under `SKI
 
 If a project config file is specified, read it for project-specific details.
 
-If no config exists, infer platform from remote URL (`git remote -v`). Default to no task tracker correlation. Offer to add a `managing-git-remote` section to the project instructions under `SKILL CONFIGURATION`.
+If no config exists, infer platform from remote URL (`git remote -v`). Default to no task tracker correlation. Offer to add a `remoting-git` section to the project instructions under `SKILL CONFIGURATION`.
 
 ---
 
