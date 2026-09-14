@@ -7,11 +7,11 @@ description: Use when starting a complex feature (6+ steps), a multi-file change
 
 ## Overview
 
-Plan first, build second. The planning model researches the codebase, settles design decisions, writes the PRD and creates the tasks. Write it so the executor needs nothing but the PRD and the task list — no codebase exploration, no design decisions, no context docs.
+Plan first, build second. The main agent researches the codebase, settles design decisions, writes the PRD, and creates the tasks. Independent reviewers test the completed plan. Write it so the executor needs only the PRD and task list.
 
 ## Workflow
 
-Use native agent tools. If cross-provider models are unavailable, use distinct available models and disclose the limitation.
+Use native agent tools for discovery and review. The main agent owns the design and PRD. Do not delegate competing plan generation.
 
 ### 1. Clarify Scope with User
 
@@ -45,7 +45,7 @@ If the `discoverer` agent is not available, fall back to the built-in `Explore` 
 
 **Anti-pattern recall:** If the project has an anti-pattern registry (`.antipatterns/` or equivalent, via `antipatterning`), recall by topic and path for the feature's area before designing.
 
-**Write the exploration doc.** Consolidate all research (direct reads and subagent reports) into `context/exploration-<feature>.md`. This file is the single input for downstream planners in §3. Include:
+The main agent consolidates direct reads and subagent reports. Capture:
 
 - Exact file paths and function signatures of code to modify
 - Existing patterns the new code should follow (reference specific files)
@@ -53,125 +53,80 @@ If the `discoverer` agent is not available, fall back to the built-in `Explore` 
 - Current UI state if frontend work (templates, components)
 - Anti-pattern findings
 
-### 3. Competing Designs
+### 3. Design Decisions
 
-Generate at least two design proposals from different providers before settling decisions. A single designer shares its own blind spots. Cross-provider proposals surface different assumptions, tradeoffs, and failure modes at low cost.
+The main agent settles the design before writing the PRD. Do not ask subagents to generate competing plans or exchange proposals.
 
-**When to skip:** If §2 read fewer than 5 files and the design has no real decision points, the main agent settles the design directly. Do not spawn planners for a single-endpoint CRUD addition with no ambiguity.
+When a material decision has several viable options:
 
-#### 3a. Spawn planners
+1. Compare the options, sorted by simplicity.
+2. Give concise pros and cons.
+3. Recommend one from the user's stated intent and repository evidence.
+4. Ask the user to rule when the choice depends on preference, scope, architecture, or accepted risk.
 
-Read `references/planner-prompt-templates.md` before the first planner dispatch. Use its matching mode for every initial or follow-up prompt.
-
-1. Choose 2-3 models from different providers in the host's subagent model list. Spawn each as a `planner` agent with a model override and the `orchestrating-agents` `planner/proposal` context profile.
-2. Each planner receives in its prompt:
-   - Path to the exploration doc from §2 (the planner reads it directly; do not re-serialize exploration into the prompt)
-   - Path to the PRD template (`references/prd-template.md`)
-   - The user's requirements from §1, summarized by the main agent
-   - A design axis to emphasize (see below)
-   - The list of decisions that must be settled (see below)
-3. Launch all planners in parallel.
-
-**Design axes** (assign one per planner, adapt to the task type):
-
-- New feature: simplicity vs. performance vs. maintainability
-- Bug fix: root cause vs. workaround vs. prevention
-- Refactoring: minimal change vs. clean architecture
-
-**Decisions that must be settled.** The executor should not be inventing:
+The executor should not be inventing:
 
 - API endpoint shape (URL, method, request/response schema)
 - Database query approach
 - Component structure and state
 - HTML layout and testability attributes (e.g., data-testid names)
 
-Adapt this list to the project's domain.
-
 If the project instructions reference a style guide or design skill, read/use them here and capture the result in the PRD. If no style guide exists, follow standard language/framework conventions and note your choices in the PRD.
 
 **Complex logic:** Use pseudocode when the approach is not obvious. Do not dictate every line - the executor needs room to adapt when reality differs from the plan.
-
-#### 3b. Resolve questions
-
-After all planners return, collect their Questions sections. Answer what the main agent can answer from §1 context. Anything the main agent cannot answer satisfactorily, elevate to the user. Re-invoke each planner that had open questions with the answers, so they can update their proposals.
-
-A planner may push back on an answer it finds unsatisfying and request user elevation. The main agent must comply.
-
-#### 3c. Peer review (up to 3 rounds)
-
-Planners review each other's proposals directly. The main agent orchestrates by passing proposals between them.
-
-**Round flow:**
-
-1. Send each planner the other planners' proposals in `Peer Review` mode. Paste the full proposal text because planners are read-only.
-2. Collect reviews. Send each planner the critiques it received. The planner responds with Agree/Disagree/Questions and re-emits its proposal only when it changes.
-3. Resolve new Questions through §3b. If no Disagree or Questions remain, or 3 rounds have passed, stop. Otherwise repeat from step 1 with updated proposals.
-
-**Addressing planners:** Each parallel spawn gets a unique agent name (e.g., `planner-simplicity`, `planner-performance`). Use SendMessage to continue an existing planner across rounds rather than spawning fresh agents. This preserves context and avoids re-priming.
-
-**Convergence:** Planners may concede points during review. Full agreement requires no `Disagree` or `Questions` items.
-
-#### 3d. Disagreement report
-
-After peer review ends, the main agent reads all final proposals and writes:
-
-- **Agreements:** Where all planners converge, one merged statement.
-- **Deltas:** Each standing disagreement itemized: the decision, each option with its reasoning, and the main agent's recommendation based on user intent from §1.
-
-Present the report to the user. The user rules on each delta. Rulings (as "Ruled: [decision], because [reason]") feed §4 and any later planner re-invocations.
 
 ### 4. Write the PRD
 
 See `references/prd-template.md` for the full template with examples.
 
-**Where to save:** Check the project instructions first for a canonical PRD path. Default: `context/prd-<feature-name>.md` — create the `context/` directory if it doesn't exist.
+**Where to save:** Check project instructions for a canonical PRD path. Default to `context/prd-<feature-name>.md`. Create `context/` when absent.
 
-When §3 produces a proposal choice or user ruling, create `<resolved-prd-path-without-.md>-decisions.md` before review. Record selected and rejected choices with the decision fields in §5c. If §3 had no decision points, later review prompts state `Decision record: none`.
+When §3 produces a user ruling or rejected alternative, create `<resolved-prd-path-without-.md>-decisions.md` before review. Record each settled choice with the decision fields in §5a. If §3 had no decision points, later review prompts state `Decision record: none`.
+
+#### Present the Plan Summary
+
+After finalizing the PRD and any decision record, present a user-facing summary before reviewer dispatch. Derive it from the PRD's Execution Order and Requirements. Do not create a separate summary file.
+
+Use one numbered item per execution step:
+
+1. **<Step name>: <intended outcome>**
+
+   - Changes: <main behavior added or changed>
+   - Files: <key files, components, or interfaces>
+   - Tests: <verification for this step>
+   - Depends on: <load-bearing dependency reason; omit when none>
+
+Keep each item concise. State accepted risks once after the numbered steps. If the summary exposes a mismatch or unresolved decision, correct the PRD before review. Do not require separate approval when the summary matches the settled plan.
 
 ### 5. Review the Plan
 
-Reuse planner agents from §3. If §3 spawned none, spawn one `planner` with the `orchestrating-agents` `planner/plan review` context profile. Give a new reviewer the PRD, matching review rubric, decision record or `none`, and every `Ruled` line.
+Read `references/plan-review-methodology.md` before dispatch. Review starts only after the main agent finishes the PRD and any decision record.
 
-#### 5a. Completeness Review
+Spawn two independent review agents in parallel. Use `plan-reviewer` when available. Otherwise use the host's read-only or general subagent with the same rubric. Prefer different providers or models. If only one reviewer is available, use it and disclose the limitation.
 
-Catches document-QA issues: TODOs, vague paths, missing signatures, untestable cases.
+Give each reviewer only:
 
-**Preconditions:** PRD contains Context Primer, Breadth Checklist, Key Assumptions, Known Risks sections.
+- mode: `Plan Review`
+- one focus: `completeness and buildability` or `assumptions and failure modes`
+- PRD path
+- decision record path or `none`
+- `references/plan-review-methodology.md`
+- every `Ruled: <decision>, because <reason>` line
+- code paths allowed for citation spot-checks
 
-**Loop:**
+Reviewers read the artifacts from disk. Do not paste the PRD or one reviewer's output into another reviewer's prompt. Reviewers find defects; they do not write replacement plans.
 
-1. Send the PRD to each planner agent in `Plan Completeness Review` mode. Include all Ruled lines from §3d.
-2. Collect reviews. If issues found: fix them in the PRD, re-send the updated sections.
-3. If approved by all planners: proceed to 5b.
-4. Max 3 iterations. If still failing, surface to user.
+After both return:
 
-The main agent fixes the PRD. Re-send only the updated sections and their direct dependents.
+1. Verify each finding against the PRD and repository.
+2. Deduplicate findings with the same cause.
+3. Fix objective document defects within the accepted design.
+4. Present material design findings, reviewer disagreements, questions, and self-found defects to the user.
+5. Apply the user's rulings and consolidate the PRD per §5a.
 
-#### 5b. Adversarial Review
+Run one review round by default. Re-review only materially changed sections and their direct dependents, or continue when the user requests another round. Resume the same reviewers and pass paths plus changed section names, not copied artifacts.
 
-Catches idea-level flaws: unvalidated assumptions, missing failure modes, scope bugs.
-
-**Preconditions:** PRD passed 5a.
-
-**Loop:**
-
-1. Send the PRD plus the decision record to each planner agent in `Plan Adversarial Review` mode. Planners spot-check file paths and signatures against the tree.
-2. Planners emit numbered findings and questions.
-3. Main agent verifies findings against the codebase. Reject findings built on stale citations and fix the citations.
-4. Present findings to the user alongside any defects the main agent found. Self-disclosure is part of the round, not a favour.
-5. User decides: continue, stop, or update PRD now.
-6. If continue: consolidate per 5c, re-run scoped 5a on edited sections, then re-send to planners with the new text marked.
-7. Repeat from step 2 until user stops.
-
-No round cap. User judges.
-
-**Scope each round at the previous round's new text.** A fix written into the PRD is unreviewed prose. Tell planners where the new text is.
-
-**Primary agent's role:** attorney, not postman. Be open-minded, agree when sensible, and push back with evidence when not. If a planner asks a codebase question, the main agent reads and answers.
-
-**After user stops:** the main agent summarizes standing findings into conceded / disputed / accepted-risk and updates the PRD per the user's rulings.
-
-#### 5c. Consolidate the PRD After Each Round
+#### 5a. Consolidate the PRD After Review
 
 The PRD states the current design. It is not a changelog of how that design was reached.
 
@@ -200,7 +155,7 @@ GOOD, consolidates:
 
 - Patch the smallest coherent block. Do not redraft a section to fix one clause.
 - Keep requirement ids stable, so an accidental deletion is visible.
-- Re-run 5a, scoped to the edited sections plus everything citing them, before firing the next 5b round. An internal contradiction is not worth an adversarial round.
+- Re-review edited sections and everything citing them after a material change.
 
 ##### The Decision Record
 
@@ -212,7 +167,7 @@ Sibling file: `context/prd-<feature>-decisions.md`. One entry per settled decisi
 - **Scope** - where it applies
 - **Reopen only if** - the evidence that would justify revisiting it. Name evidence, not "do not re-litigate"
 
-Send 5b the PRD plus this register. Never the deliberation transcript - it anchors the reviewer on designs that no longer exist.
+Send reviewers the PRD plus this register. Never send the deliberation transcript. It anchors reviewers on designs that no longer exist.
 
 ### 6. Create Tasks
 
@@ -230,6 +185,7 @@ A useful default shape, if the project has not already declared one:
 | docs, infra         | none           |
 
 **Spawn the `task-writer` agent** with:
+
 - Path to the PRD
 - The resolved testing policy per layer
 - Path to project instructions (if any)
@@ -251,3 +207,13 @@ The agent reads the PRD and both contracts, writes `.tasks/` files, runs the can
 - Function signatures include types, not just names
 - Test cases are enumerated, not "add appropriate tests"
 - Ambiguity is resolved in the PRD, not left for the executor to figure out
+
+## Completion Gate
+
+- [ ] The main agent researched the codebase, settled the design, and wrote the PRD.
+- [ ] The user received a step-by-step summary derived from the finalized PRD before reviewer dispatch.
+- [ ] No subagent generated a competing plan or exchanged proposals with another reviewer.
+- [ ] Two independent reviewers read the PRD from disk and returned concise findings without replacement plans, or the single-reviewer limitation was disclosed.
+- [ ] Every accepted finding is reflected in the PRD; every rejected finding has repository evidence.
+- [ ] User rulings and accepted risks appear in the decision record when one exists.
+- [ ] Task files follow `references/managing-tasks-integration.md` and `task verify` exits 0 when task creation applies.

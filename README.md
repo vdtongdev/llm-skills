@@ -23,6 +23,8 @@ Both hosts load shared instructions from `GLOBAL_CLAUDE.md`. Repository work als
 
 Claude Code reads personal subagents through `~/.claude/agents`. That path links to the tracked `.agents-claude/` directory in this repository.
 
+The `plan-reviewer` agent reviews completed PRDs. The main agent owns research synthesis, design decisions, and PRD writing.
+
 ## Migrate existing instruction links
 
 First synchronize a commit that contains `GLOBAL_CLAUDE.md`. Then inspect the existing links:

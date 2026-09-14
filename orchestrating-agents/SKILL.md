@@ -1,6 +1,6 @@
 ---
 name: orchestrating-agents
-description: Coordinate planning and implementation through a main orchestrator and specialized subagents. Use for delegation, parallel agents, planner groups, task workers, or reviewed task-graph execution. Keep genuinely small tasks with the orchestrator.
+description: Coordinate planning and implementation through a main orchestrator and specialized subagents. Use for delegation, parallel agents, plan review, task workers, or reviewed task-graph execution. Keep genuinely small tasks with the orchestrator.
 ---
 
 # Orchestrating Agents
@@ -14,13 +14,12 @@ Agent definitions own stable expertise, tool limits, modes, and output contracts
 Every dispatch names the objective, mode, source paths, settled user decisions, owned paths or read-only boundary, required checks, expected deliverable, and escalation triggers. Add the matching context:
 
 - **Discoverer**: search focus and breadth; project structure docs; relevant registries; evidence required from code and tests.
-- **Planner / proposal**: user requirements; exploration artifact; design axis; decisions to settle; plan template and design rules.
-- **Planner / plan review**: plan artifact; review mode and rubric; decision record; settled rulings; code paths allowed only for citation checks.
+- **Plan reviewer**: completed plan artifact; review focus and rubric; decision record; settled rulings; code paths allowed only for citation checks. Never request a competing or replacement plan.
 - **Task writer**: approved plan; testing policy by layer; project instructions; task schema and quality contracts; owned `.tasks/` paths; verification command.
 - **Worker**: task or assignment; definition of done; project rules; implementation evidence; owned and forbidden paths; required checks.
 - **Reviewer**: stable artifact; artifact type; accepted objective and rubric; project rules; relevant registries; code-review base and head when applicable. Do not include worker conclusions or a preferred verdict.
 
-Planning dispatches remain under `planning-tasks`. They do not enter the implementation task suite, use worker journal proposals, stage changes, or trigger the serial code-review gate. The main agent still owns user questions, rulings, synthesis, plan files, task acceptance, and journal state.
+Planning reviews remain under `planning-tasks`. They do not enter the implementation task suite, use worker journal proposals, stage changes, or trigger the serial code-review gate. The main agent owns research synthesis, design, user questions, rulings, plan files, task acceptance, and journal state.
 
 ## Choose the Execution Shape
 

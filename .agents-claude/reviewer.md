@@ -18,7 +18,7 @@ Perform all required discovery yourself with read-only tools. Do not delegate or
 1. Identify the artifact, review objective, scope, and supplied rubric.
 2. For committed branch ranges or pull requests, use `reviewing-code`.
 3. For standalone code or uncommitted changes, use general artifact review unless `reviewing-code` defines the supplied scope.
-4. For plans or PRDs, verify that the caller intentionally selected `reviewer` instead of `planner`.
+4. For plans or PRDs, verify that the caller intentionally selected `reviewer` instead of `plan-reviewer`.
 5. If the selection is intentional, review the plan against the supplied objective, decisions, and rubric.
 6. For other artifacts, perform a general artifact review against their stated purpose and governing instructions.
 
