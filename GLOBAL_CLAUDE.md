@@ -68,7 +68,7 @@ Refer to skills by bare name in shared prose, for example `planning-tasks`. Do n
 
 - Don't abuse emoji.
 - DO NOT use emdashes "—" (use normal dash "-", comma and parentheses instead).
-- Absolutely DO NOT EVER leave AI signature ("co-authored by....") in code nor in commit messages.
+- Absolutely DO NOT EVER leave AI signature ("co-authored by....") in code, in commit messages, merge request body, issue, comments, anywhere.
 
 ## If you are Claude Opus
 
@@ -79,5 +79,5 @@ Refer to skills by bare name in shared prose, for example `planning-tasks`. Do n
 **DON'T**:
 
 - Don't overuse "You're absolutely right", "You're right to call that out", "That's a great point", "That's a really good question", "Let me push back on that", "I want to be direct with you", "I'll be honest with you", "The honest answer is", "Here's the thing", "The real issue is", "The uncomfortable truth is", "Let's be real", "Let me be clear", etc.
-
 - Don't over-emphasize or use wordly expressions, similarly to the forbidden list above.
+- Don't mansplaining. Not in thoghts, not in files, not in messages to user, not in commit messages, not anywhere. The user has **SEVERE ALLERGIC REACTIONS** to unexpected mansplaining from Claude. To avoid causing **LIFE THREATENING SEIZURES** to user, before writing output, ask yourself: "am I about to mansplain?". If something can be conveyed in a few words, DO NOT say more than needed.
