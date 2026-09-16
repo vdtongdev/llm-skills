@@ -1,80 +1,89 @@
 # Personal Agent Skills and Subagents
 
-This private repository is the shared source for Claude Code and Codex skills. Edit and commit only in `~/.claude/skills`; the Codex checkout is a read-only mirror updated through Git.
+Shared source for personal Claude Code and Codex skills, Claude subagents, and their supporting CLIs.
 
-## First-time setup
+## Contents
 
-Clone this repository to `~/.claude/skills` first. Then run:
+- [Install](#install)
+- [Skills](#skills)
+- [Claude subagents](#claude-subagents)
+- [Update](#update)
+- [Remove Codex integration](#remove-codex-integration)
+
+## Install
+
+Requires Git and Node.js 20 or newer.
 
 ```bash
+git clone git@gitlab.com:tamnguyenswe/llm-skills.git ~/.claude/skills
 mkdir -p ~/.agents ~/.codex
 git clone "$(git -C ~/.claude/skills remote get-url origin)" ~/.agents/skills
+
+npm ci --prefix ~/.claude/skills/antipatterning
+npm ci --prefix ~/.claude/skills/managing-tasks
+npm ci --prefix ~/.claude/skills/testing-code
+
 ln -s ~/.claude/skills/GLOBAL_CLAUDE.md ~/.claude/CLAUDE.md
 ln -s ~/.agents/skills/GLOBAL_CLAUDE.md ~/.codex/AGENTS.md
 ln -s skills/.agents-claude ~/.claude/agents
-npm ci --prefix ~/.claude/skills/managing-tasks
 ```
 
-`ln -s` refuses existing targets. Inspect each destination and resolve conflicts manually. Do not overwrite them.
+Inspect and resolve existing link targets before running `ln -s`. Do not overwrite them.
 
-Claude Code reads skills from `~/.claude/skills`. Codex reads the mirror from `~/.agents/skills`. Both use the same committed `SKILL.md` files and resources.
+## Skills
 
-Both hosts load shared instructions from `GLOBAL_CLAUDE.md`. Repository work also loads `CLAUDE.md` through the tracked `AGENTS.md` symlink.
+| Skill | Purpose |
+| --- | --- |
+| `antipatterning` | Recall and maintain project anti-pattern records. |
+| `journaling-session-memory` | Resume, checkpoint, hand off, and compact project session memory. |
+| `maintaining-skills` | Update evolvable skill knowledge when explicitly requested. |
+| `managing-tasks` | Track project tasks, dependencies, context, and status in `.tasks/`. |
+| `orchestrating-agents` | Coordinate delegated work, parallel agents, integration, and review. |
+| `planning-tasks` | Research and design complex changes, then produce reviewed implementation plans. |
+| `prototyping` | Build fast, disposable prototypes with reduced planning, testing, and review rigor. |
+| `remoting-git` | Manage GitHub and GitLab issues, merge requests, and pull requests. |
+| `reviewing-code` | Review committed branches and pull requests before merge. |
+| `testing-code` | Plan, write, maintain, and map valuable automated tests. |
+| `writing-llm-document` | Write concise instructions and context documents for LLM consumption. |
 
-Claude Code reads personal subagents through `~/.claude/agents`. That path links to the tracked `.agents-claude/` directory in this repository.
+Bundled CLIs:
 
-The `plan-reviewer` agent reviews completed PRDs. The main agent owns research synthesis, design decisions, and PRD writing.
+| Command | Purpose |
+| --- | --- |
+| `~/.claude/skills/antipatterning/bin/antipattern` | Query and update anti-pattern registries. |
+| `~/.claude/skills/managing-tasks/bin/task` | Manage project task files. |
+| `~/.claude/skills/testing-code/bin/testmap` | Query and validate test registries. |
 
-## Migrate existing instruction links
+## Claude subagents
 
-First synchronize a commit that contains `GLOBAL_CLAUDE.md`. Then inspect the existing links:
+| Agent | Purpose |
+| --- | --- |
+| `allrounder-low`, `allrounder-high`, `allrounder-max` | Handle bounded implementation and investigation with configured effort profiles. |
+| `discoverer` | Locate code and trace references without editing. |
+| `plan-reviewer` | Review completed PRDs without generating replacement plans. |
+| `reviewer` | Review code and other technical artifacts independently. |
+| `task-writer` | Convert an approved plan into verified `.tasks/` files. |
 
-```bash
-readlink ~/.claude/CLAUDE.md
-readlink ~/.codex/AGENTS.md
-```
+## Update
 
-If they are the managed links from the previous layout, repoint them:
+Edit and commit only in `~/.claude/skills`. Treat `~/.agents/skills` as a read-only Git mirror.
 
-```bash
-ln -sfn ~/.claude/skills/GLOBAL_CLAUDE.md ~/.claude/CLAUDE.md
-ln -sfn ~/.agents/skills/GLOBAL_CLAUDE.md ~/.codex/AGENTS.md
-```
-
-## Synchronize committed changes
-
-Commit changes in `~/.claude/skills`, then run:
+Commit and push canonical changes before updating the mirror:
 
 ```bash
 git -C ~/.claude/skills push
 git -C ~/.agents/skills pull --ff-only
 ```
 
-Resolve rejected pushes, dirty worktrees, and divergent branches with ordinary Git commands. Do not force-push, reset, clean, or overwrite files merely to make the mirror update.
-
-Run `npm ci --prefix ~/.claude/skills/managing-tasks` after `managing-tasks/package.json` or `managing-tasks/package-lock.json` changes.
-
-## Task command
-
-Both agents use the canonical executable:
-
-```bash
-~/.claude/skills/managing-tasks/bin/task --help
-```
-
-An optional shell alias is:
-
-```bash
-alias task="~/.claude/skills/managing-tasks/bin/task"
-```
+Run `npm ci --prefix ~/.claude/skills/<package>` after changing a package's `package.json` or `package-lock.json`.
 
 ## Remove Codex integration
 
-Before removing anything, verify the managed link and mirror:
+Verify the managed link and clean mirror first:
 
 ```bash
 readlink ~/.codex/AGENTS.md
 git -C ~/.agents/skills status --short
 ```
 
-The expected link target is `~/.agents/skills/GLOBAL_CLAUDE.md`. Remove only that link and the clean mirror checkout; keep `~/.codex/skills/.system` untouched.
+The expected link target is `~/.agents/skills/GLOBAL_CLAUDE.md`. Remove only that link and a clean mirror checkout. Keep `~/.codex/skills/.system`.

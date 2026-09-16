@@ -22,6 +22,7 @@ budget_words: { target: 2000, hard: 3500 }
 - journaling-session-memory: onboarding, checkpoints, handoffs, COMMON compaction, archive retrieval, and topic routing
 - orchestrating-agents: execution-shape classification, tracked and untracked delegation, context priming, integration, and independent review
 - planning-tasks: scope clarification, codebase research, main-agent design and PRD writing, user-facing plan summaries, independent plan review, task creation
+- prototyping: explicit prototype mode, workflow overrides, acceptable shortcuts, minimal validation, delegation propagation, and handoff boundaries
 - remoting-git: GitHub and GitLab issues, merge requests, pull requests, commit correlation, and remote workflow
 - reviewing-code: committed branch and PR review, pass sequencing, findings, review state, and follow-up tasks
 - skill-repository: canonical checkout, Codex mirror, shared and repo instruction files, host links, and tracked Claude subagents
