@@ -25,14 +25,14 @@ If no config exists, infer platform from remote URL (`git remote -v`). Default t
 
 **Title format:** `<type>: <description>`
 
-| Type | Use |
-|---|---|
-| `feat:` | New feature |
-| `fix:` | Bug fix |
+| Type        | Use                |
+| ----------- | ------------------ |
+| `feat:`     | New feature        |
+| `fix:`      | Bug fix            |
 | `refactor:` | Code restructuring |
-| `docs:` | Documentation |
-| `test:` | Test updates |
-| `ci:` | CI/CD changes |
+| `docs:`     | Documentation      |
+| `test:`     | Test updates       |
+| `ci:`       | CI/CD changes      |
 
 - Lowercase after colon
 - Concise phrase, not a full sentence
@@ -50,10 +50,10 @@ If no config exists, infer platform from remote URL (`git remote -v`). Default t
 
 Two workflows — read the relevant reference when needed:
 
-| Task | Reference |
-|---|---|
+| Task                                      | Reference                      |
+| ----------------------------------------- | ------------------------------ |
 | Refining, correlating, and closing issues | `references/issue-workflow.md` |
-| Creating merge/pull requests | `references/mr-workflow.md` |
+| Creating merge/pull requests              | `references/mr-workflow.md`    |
 
 ---
 
@@ -106,6 +106,11 @@ glab issue update 8 --title "..." && \
 "Implements Task #14"
 # ✅ Reference platform issues
 "Implements #8"
+
+# ❌ Wrapping commit hashes in backquotes
+"Solved in `de68231`"
+# ✅ Don't wrap, use bare hash
+"Solved in de68231"
 
 # ❌ Vague commit reference
 "Solved recently"
