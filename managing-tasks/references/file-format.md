@@ -130,7 +130,7 @@ context:
 ## Filename rules
 
 - Top-level tasks: `<prefix>-<slug>.yaml`. Prefix is three digits (e.g., `010`, `020`). Slug is lowercase ASCII, hyphen-separated, ≤60 chars.
-- Archived tasks: identical filename under `.tasks/archive/`.
+- Archived tasks: identical filename under `.tasks/archived/`.
 - Prefix gap: 10 between consecutive new tasks. `task move` uses gap-fill; exhausted gaps → `task renumber`.
 
 ## Allocating a new file's identity
