@@ -116,12 +116,6 @@ def resync():
         GLOBAL.write_text(json.dumps(cfg))
 
 
-def note_running():
-    """Say when a running Claude Code will notice the swap."""
-    if pid := running():
-        print(f"note: Claude Code is running (pid {pid}); it re-reads the file at\n      its next token check, not immediately")
-
-
 def show():
     """List the live credentials and every slot."""
     cur = live_slot()
@@ -130,7 +124,7 @@ def show():
         mark = "->" if name == cur else "  "
         print(
             f"{mark} {name:<6} {state(o):<10} access {when(o.get('expiresAt', 0)):<28} "
-            f"refresh {when(o.get('refreshTokenExpiresAt', 0))}"
+            f"refresh {when(o.get('refreshTokenExpiresAt', 0))}",
         )
     if cur is None:
         print(f"\nlive tokens match no slot; save them with: {ME} write N")
@@ -158,7 +152,6 @@ def switch(n):
     copy(slot_file(n), LIVE)
     resync()
     print(f"switched to slot {n} ('bak' undoes this)")
-    note_running()
 
 
 def write(n):
@@ -187,7 +180,6 @@ def restore():
     copy(BAK, LIVE)
     resync()
     print("restored .credentials.bak" + (f" (slot {n})" if (n := live_slot()) else ""))
-    note_running()
 
 
 if __name__ == "__main__":
