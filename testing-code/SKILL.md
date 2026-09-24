@@ -26,6 +26,9 @@ The registry is the coverage map. Source is still authoritative for what a test 
   --path backend/services/enrollment_service.py --topic authorization
 ```
 
+For an explicit audit or trim of an existing test registry, read
+[references/pruning.md](references/pruning.md) and follow its source-check and self-review gates.
+
 ### Before test work
 
 1. Run `testmap select` against every relevant production path, topic, and layer. Selectors are repeatable and results are a union.

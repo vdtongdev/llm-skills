@@ -83,6 +83,9 @@ Use stable IDs. Change titles and filenames without changing IDs. Record lineage
 
 Apply these criteria when creating, migrating, or reviewing entries.
 
+For an explicit audit or trim of an existing registry, read
+[references/pruning.md](references/pruning.md) and follow its evidence and self-review gates.
+
 An entry belongs in the registry when ALL of these hold:
 
 - **Recurrent**: the trap has a realistic chance of firing again. A one-shot lesson already applied everywhere is dead weight.
