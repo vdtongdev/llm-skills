@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 // Claude Code status line (colored, single line):
-//   Left:  project · model · context window · lines changed
+//   Left:  project · model · context window · git branch
 //   Right: 5h session usage · 7d weekly usage (reset times in Asia/Saigon)
 
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { execSync } = require("child_process");
 
 const TZ = "Asia/Ho_Chi_Minh"; // Saigon
+const CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude");
+const USAGE_CACHE = path.join(CONFIG_DIR, ".usage-cache.json");
+// Same login when refresh expiries are this close; see switch-account.py.
+const REFRESH_EXPIRY_TOLERANCE_MS = 5000;
 
 // ── ANSI colors ────────────────────────────────────────────────────────────
 const C = {
@@ -45,8 +50,7 @@ function visibleLength(s) {
 }
 
 // Terminal width for right-aligning row 2. statusLine's stdout is piped, so
-// process.stdout.columns is usually unavailable and COLUMNS is rarely
-// exported to child processes; query the controlling terminal directly.
+// process.stdout.columns is unavailable; Claude Code exports COLUMNS.
 function terminalWidth() {
   if (process.stdout.columns) return process.stdout.columns;
   const envCols = parseInt(process.env.COLUMNS, 10);
@@ -75,8 +79,39 @@ process.stdin.on("data", (c) => (raw += c));
 process.stdin.on("end", () => {
   let data = {};
   try { data = JSON.parse(raw || "{}"); } catch { /* ignore */ }
+  cacheUsage(data.rate_limits);
   process.stdout.write(render(data));
 });
+
+// Save the live login's quota, keyed by refresh token expiry, so
+// switch-account.py can show the last seen usage of every slot.
+function cacheUsage(rateLimits) {
+  if (!rateLimits?.five_hour && !rateLimits?.seven_day) return;
+  try {
+    const credentials = JSON.parse(fs.readFileSync(path.join(CONFIG_DIR, ".credentials.json"), "utf8"));
+    const refreshExpiresAt = credentials.claudeAiOauth?.refreshTokenExpiresAt;
+    if (!refreshExpiresAt) return;
+    let entries = [];
+    try { entries = JSON.parse(fs.readFileSync(USAGE_CACHE, "utf8")); } catch { /* no cache yet */ }
+    // Right after a switch, rate_limits still describe the previous login until its next request.
+    const latest = entries.reduce((newest, entry) => (!newest || entry.seen_at > newest.seen_at ? entry : newest), null);
+    const isOtherLogin = latest && Math.abs(latest.refresh_expires_at - refreshExpiresAt) > REFRESH_EXPIRY_TOLERANCE_MS;
+    const isUnchanged = latest
+      && JSON.stringify([latest.five_hour, latest.seven_day]) === JSON.stringify([rateLimits.five_hour, rateLimits.seven_day]);
+    if (isOtherLogin && isUnchanged) return;
+    const now = Date.now();
+    entries = entries.filter((entry) =>
+      entry.refresh_expires_at > now
+      && Math.abs(entry.refresh_expires_at - refreshExpiresAt) > REFRESH_EXPIRY_TOLERANCE_MS);
+    entries.push({
+      refresh_expires_at: refreshExpiresAt,
+      five_hour: rateLimits.five_hour,
+      seven_day: rateLimits.seven_day,
+      seen_at: now,
+    });
+    fs.writeFileSync(USAGE_CACHE, JSON.stringify(entries), { mode: 0o600 });
+  } catch { /* the status line must render regardless */ }
+}
 
 function fmtClock(epochSec, withDay) {
   if (epochSec == null) return "?";
@@ -87,14 +122,20 @@ function fmtClock(epochSec, withDay) {
   return new Intl.DateTimeFormat("en-GB", opts).format(d);
 }
 
+const DURATION_UNITS = [["d", 86400], ["h", 3600], ["m", 60], ["s", 1]];
+
+// Time left in the two largest units: 2d 4h, 3h 20m, 20m 34s, 10s.
 function countdown(epochSec) {
   if (epochSec == null) return "";
-  const ms = epochSec * 1000 - Date.now();
-  if (ms <= 0) return "now";
-  const totalMin = Math.round(ms / 60000);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  return h > 0 ? `${h}h${String(m).padStart(2, "0")}m` : `${m}m`;
+  const remainingSeconds = Math.floor(epochSec - Date.now() / 1000);
+  if (remainingSeconds <= 0) return "now";
+  const largestIndex = DURATION_UNITS.findIndex(([, unitSeconds]) => remainingSeconds >= unitSeconds);
+  const [largestName, largestSeconds] = DURATION_UNITS[largestIndex];
+  const largestCount = Math.floor(remainingSeconds / largestSeconds);
+  if (largestIndex === DURATION_UNITS.length - 1) return `${largestCount}${largestName}`;
+  const [nextName, nextSeconds] = DURATION_UNITS[largestIndex + 1];
+  const nextCount = Math.floor((remainingSeconds % largestSeconds) / nextSeconds);
+  return `${largestCount}${largestName} ${nextCount}${nextName}`;
 }
 
 function pct(v) {
@@ -132,6 +173,16 @@ function contextTokens(transcriptPath) {
   return null;
 }
 
+// Current branch, or null when detached or outside a repository.
+function gitBranch(dir) {
+  if (!dir) return null;
+  try {
+    return execSync("git branch --show-current", { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 function fmtTokens(n) {
   return n >= 1000 ? `${(n / 1000).toFixed(0)}k` : `${n}`;
 }
@@ -141,7 +192,7 @@ function render(data) {
   const five = rl.five_hour;
   const week = rl.seven_day;
 
-  // ── Row 1: project · model · context · lines ────────────────────────────
+  // ── Row 1: project · model · context · git branch ────────────────────────────
   const row1 = [];
 
   const projDir = data.workspace?.project_dir || data.workspace?.current_dir || data.cwd;
@@ -154,12 +205,11 @@ function render(data) {
   if (ctx != null) {
     const limit = contextLimit(data);
     const r = ctx / limit;
-    row1.push(`🧠 ${bar(r)} ${c(C.gray, `${fmtTokens(ctx)}/${fmtTokens(limit)}`)} ${c(levelColor(r), pct(r * 100))}`);
+    row1.push(`🧠 ${bar(r)} ${c(C.gray, fmtTokens(ctx))}`);
   }
 
-  const added = data.cost?.total_lines_added || 0;
-  const removed = data.cost?.total_lines_removed || 0;
-  if (added || removed) row1.push(`${c(C.green, `+${added}`)}${c(C.gray, "/")}${c(C.red, `-${removed}`)}`);
+  const branch = gitBranch(data.workspace?.current_dir || data.cwd);
+  if (branch) row1.push(`🪾 ${c(C.green, branch)}`);
 
   // ── Row 2: 5h · 7d usage ────────────────────────────────────────────────
   const row2 = [];
@@ -184,7 +234,9 @@ function render(data) {
   // Not enough room to fit both on one line with a readable gap: fall back
   // to the original two-row, top/bottom layout.
   const MIN_GAP = 2;
-  const tw = terminalWidth();
+  // Claude Code truncates the status line 4 columns short of COLUMNS (measured at 169).
+  const CLAUDE_CODE_MARGIN = 4;
+  const tw = terminalWidth() - CLAUDE_CODE_MARGIN;
   const leftLen = visibleLength(left);
   const rightLen = visibleLength(right);
   const gap = tw - leftLen - rightLen;

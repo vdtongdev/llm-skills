@@ -26,3 +26,4 @@ budget_words: { target: 2000, hard: 3500 }
 - remoting-git: GitHub and GitLab issues, merge requests, pull requests, commit correlation, and remote workflow
 - reviewing-code: committed branch and PR review, pass sequencing, findings, review state, and follow-up tasks
 - skill-repository: canonical checkout, Codex mirror, shared and repo instruction files, host links, and tracked Claude subagents
+- switch-account: `switch-account.py` credential slots, live-slot matching by refresh expiry, token rotation, profile re-fetch, and the `statusline.js` quota cache
