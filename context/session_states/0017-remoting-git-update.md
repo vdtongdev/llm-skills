@@ -2,9 +2,9 @@
 id: 0017
 slug: remoting-git-update
 started: 2026-10-01
-finalized: false
+finalized: true
 branch: master
-head:
+head: 5a31dd1
 tasks: []
 topics: [remoting-git]
 ---
@@ -22,3 +22,22 @@ Continues finalized session 0016.
 - discovered: coconut tags `v2026.09.25.2-release` to `v2026.09.28.0-release` carry only "see !N for details" messages, the behavior the tag workflow replaces.
 - decision: renamed `remoting-git` -> `gitlabbing`. The user required a short, easy-to-type name whose first word collides with no existing skill or Claude Code command; the "re" prefix is crowded (`reviewing-code`, `remote-env`, `/resume`, `/review`). GitHub coverage dropped to one fallback line because the user works on GitLab only.
 - done: `gitlabbing/` - directory, frontmatter, heading, config key, and GitLab-only description; `README.md` row re-sorted; `~/projects/banana/CLAUDE.md` config key renamed, uncommitted on branch `58-stack-upgrade`. Topic code stays `remoting-git` because assigned codes never change.
+
+## Handoff
+
+### Work
+
+- [x] `gitlabbing/` (was `remoting-git/`): contradictions fixed, prose pruned, Completion Gate, issue labels, `references/tag-workflow.md`; committed as `5a31dd1`
+- [x] `README.md`: `gitlabbing` row, alphabetical
+- [ ] `~/projects/banana/CLAUDE.md`: `gitlabbing` config key plus session 0016 push-rule edit, uncommitted on branch `58-stack-upgrade`
+- [ ] `~/projects/coconut/CLAUDE.md`: session 0016 push-rule edit, uncommitted on branch `81-misc`
+
+### Next
+
+1. Commit the banana and coconut `CLAUDE.md` edits when the user next works in those repos.
+
+### State
+
+- tree: clean; pushed to `origin/master`; `~/.agents/skills` mirror pulled
+- avoid: `glab` is not installed locally; flags came from docs.gitlab.com, so verify a command against `glab <cmd> --help` before relying on an unverified flag
+- retrieve: `remoting-git` topic code covers the `gitlabbing` skill
