@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Claude Code status line (colored, single line):
-//   Left:  project · model · context window · git branch
-//   Right: 5h session usage · 7d weekly usage (reset times in Asia/Saigon)
+// Claude Code status line (colored):
+//   Row 1: project · model · context window · git branch
+//   Row 2: 5h session usage · 7d weekly usage (reset times in Asia/Saigon)
+// Both rows share one line when they fit; a row too wide for the terminal splits in two.
 
 const fs = require("fs");
 const os = require("os");
@@ -231,17 +232,21 @@ function render(data) {
   const left = row1.join(SEP);
   const right = row2.join(SEP);
 
-  // Not enough room to fit both on one line with a readable gap: fall back
-  // to the original two-row, top/bottom layout.
   const MIN_GAP = 2;
   // Claude Code truncates the status line 4 columns short of COLUMNS (measured at 169).
   const CLAUDE_CODE_MARGIN = 4;
   const tw = terminalWidth() - CLAUDE_CODE_MARGIN;
-  const leftLen = visibleLength(left);
-  const rightLen = visibleLength(right);
-  const gap = tw - leftLen - rightLen;
+  const gap = tw - visibleLength(left) - visibleLength(right);
 
-  if (gap < MIN_GAP) return left + "\n" + right;
+  if (gap >= MIN_GAP) return left + " ".repeat(gap) + right;
 
-  return left + " ".repeat(gap) + right;
+  return [fitRow(row1, tw), fitRow(row2, tw)].join("\n");
+}
+
+// Join a row's segments on one line, or split them over two lines when too wide.
+function fitRow(segments, width) {
+  const line = segments.join(SEP);
+  if (visibleLength(line) <= width || segments.length < 2) return line;
+  const half = Math.ceil(segments.length / 2);
+  return segments.slice(0, half).join(SEP) + "\n" + segments.slice(half).join(SEP);
 }
