@@ -20,7 +20,7 @@ Prototype mode changes engineering rigor, not execution shape. Work may stay dir
 
 These rules override default workflows from the named skills while prototype mode is active. They never override user, project, system, safety, or authorization requirements.
 
-- **`planning-tasks`:** Do not invoke it because the prototype is broad or complex. Do not create a PRD, decision record, or plan review. Use a short working outline when decomposition helps.
+- **`planning-tasks`:** Do not invoke it because the prototype is broad or complex. Do not create a plan file or plan review. Use a short working outline when decomposition helps.
 - **`testing-code`:** Do not start TDD, expand coverage, initialize test infrastructure, or run broad test suites. Write or run a test only when the user requests it or it is the cheapest proof of the core path.
 - **`orchestrating-agents`:** Delegation and parallel workers remain available. Give every worker prototype mode and this override contract. Do not add production review gates solely because work was delegated.
 - **`managing-tasks`:** Task tracking and decomposition remain available. Add `prototyping` to each prototype task's `context[]`. Do not add RED/GREEN subtasks or production test requirements by default.
@@ -84,7 +84,7 @@ Report only:
 
 - [ ] Prototype mode was explicitly requested and remained limited to this assignment.
 - [ ] The chosen core path works through the cheapest relevant check.
-- [ ] PRDs, TDD, broad test suites, screenshots, and production review were skipped unless specifically needed or required.
+- [ ] Plan files, TDD, broad test suites, screenshots, and production review were skipped unless specifically needed or required.
 - [ ] Every delegated worker received prototype mode and its override contract.
 - [ ] Tasks, when used, carried `prototyping` in `context[]` and avoided default production test phases.
 - [ ] Documentation is limited to running, evaluating, and identifying intentional shortcuts.

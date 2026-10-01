@@ -36,8 +36,8 @@ subtasks:
     kind: GREEN
     title: implement fetch + getters
 sources:
-  - kind: prd
-    ref: context/prd-dashboard.md#implementation-details-backend
+  - kind: plan
+    ref: context/plans/dashboard.md#steps
     meta:
       section_hash: "abc123"
 ```

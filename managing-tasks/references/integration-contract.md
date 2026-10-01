@@ -96,8 +96,8 @@ tests:
   - "GET /dashboard/mtd-summary returns 200"
 notes: []
 sources:
-  - kind: prd
-    ref: context/prd-dashboard.md#implementation-details-backend
+  - kind: plan
+    ref: context/plans/dashboard.md#steps
 context:                     # optional; what to read BEYOND the kind default
   - kind: file
     ref: backend/services/currency.py
@@ -127,8 +127,8 @@ Producer-side consequence: call `task get-new-uid --count <n>` **once** for the 
 Single-string format, used by `task new --source`, `task new --context`, and `task add-source`:
 
 ```
-kind=prd,ref=context/prd-X.md#section
-kind=prd,ref="path/with,comma.md#sec",meta.section_hash=abc
+kind=plan,ref=context/plans/X.md#section
+kind=plan,ref="path/with,comma.md#sec",meta.section_hash=abc
 kind=review,ref=abc1234#finding-5
 ```
 

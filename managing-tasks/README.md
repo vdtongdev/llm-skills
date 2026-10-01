@@ -82,8 +82,8 @@ files:
   - path: backend/routers/auth.py
     kind: create
 sources:
-  - kind: prd
-    ref: context/prd-auth.md#implementation-details
+  - kind: plan
+    ref: context/plans/auth.md#steps
 ```
 
 **Three identity layers:**

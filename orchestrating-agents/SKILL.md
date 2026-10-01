@@ -14,12 +14,10 @@ Agent definitions own stable expertise, tool limits, modes, and output contracts
 Every dispatch names the objective, mode, source paths, settled user decisions, owned paths or read-only boundary, required checks, expected deliverable, and escalation triggers. Add the matching context:
 
 - **Discoverer**: search focus and breadth; project structure docs; relevant registries; evidence required from code and tests.
-- **Plan reviewer**: completed plan artifact; review focus and rubric; decision record; settled rulings; code paths allowed only for citation checks. Never request a competing or replacement plan.
-- **Task writer**: approved plan; testing policy by layer; project instructions; task schema and quality contracts; owned `.tasks/` paths; verification command.
 - **Worker**: task or assignment; definition of done; project rules; implementation evidence; owned and forbidden paths; required checks.
 - **Reviewer**: stable artifact; artifact type; accepted objective and rubric; project rules; relevant registries; code-review base and head when applicable. Do not include worker conclusions or a preferred verdict.
 
-Planning reviews remain under `planning-tasks`. They do not enter the implementation task suite, use worker journal proposals, stage changes, or trigger the serial code-review gate. The main agent owns research synthesis, design, user questions, rulings, plan files, task acceptance, and journal state.
+Plan reviews belong to `planning-tasks`. They do not enter the implementation task suite, use worker journal proposals, stage changes, or trigger the serial code-review gate. The main agent owns research synthesis, design, user questions, rulings, plan files, task acceptance, and journal state.
 
 ## Choose the Execution Shape
 
@@ -43,7 +41,7 @@ Project instructions may require independent review even for direct work. If a r
 When requested work does not map to an existing task or accepted task graph, classify it before execution:
 
 1. **Small**: If it satisfies every direct-work condition above, handle it immediately with the orchestrator. Do not create a task solely to execute it.
-2. **Heavy**: If it needs broad research, six or more implementation steps, multi-file architectural decisions, or unresolved design, cite the observed complexity and ask whether to invoke `planning-tasks`. Do not disguise planning work as a worker assignment.
+2. **Heavy**: If it needs broad research, six or more implementation steps, multi-file architectural decisions, or unresolved design, cite the observed complexity and invoke `planning-tasks`. Do not disguise planning work as a worker assignment.
 3. **Medium**: Otherwise analyze the objective, task type, write surface, dependencies, risks, and required checks, then dispatch one untracked worker.
 
 Before dispatching medium work:
@@ -101,7 +99,7 @@ These delegated agents do not create session files or edit session journals or `
 Give each worker a bounded contract containing:
 
 - task id when tracked, otherwise an assignment label; objective, definition of done, owned paths, and forbidden paths or actions
-- exact project instructions, PRD, decisions, and handoffs to read
+- exact project instructions, plan, decisions, and handoffs to read
 - critical facts a cold agent may miss, with an instruction to verify them against source
 - required checks and how to interpret their output
 - escalation triggers: ambiguity, user preference, architecture, new authority, scope collision, shared state, or third failed attempt
@@ -195,7 +193,7 @@ Resolve implementation disputes from source, tests, specifications, and reproduc
 Before claiming completion, verify every item:
 
 - [ ] The execution shape satisfies the direct-work threshold and project rules, or an explicit user-approved change is recorded.
-- [ ] Untracked work was classified as small, medium, or heavy; medium work received one context-primed worker, and heavy work was offered `planning-tasks` when planning would reduce risk.
+- [ ] Untracked work was classified as small, medium, or heavy; medium work received one context-primed worker, and heavy work went through `planning-tasks`.
 - [ ] `task verify` passed when the task suite applies; every tracked worker invoked `managing-tasks`, ran `task show <id>` itself, and received one explicit ready task id. Untracked workers skipped tracker-only operations.
 - [ ] Parallel-wave tasks had disjoint dependencies, write surfaces, generated artifacts, and mutable runtime state.
 - [ ] Every implementation worker and code/PR reviewer completed delegated onboarding before work.

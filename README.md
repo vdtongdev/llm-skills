@@ -39,7 +39,7 @@ Inspect and resolve existing link targets before running `ln -s`. Do not overwri
 | `maintaining-skills` | Update evolvable skill knowledge when explicitly requested. |
 | `managing-tasks` | Track project tasks, dependencies, context, and status in `.tasks/`. |
 | `orchestrating-agents` | Coordinate delegated work, parallel agents, integration, and review. |
-| `planning-tasks` | Research and design complex changes, then produce reviewed implementation plans. |
+| `planning-tasks` | Research complex changes and write a short plan file that carries work across sessions. |
 | `prototyping` | Build fast, disposable prototypes with reduced planning, testing, and review rigor. |
 | `remoting-git` | Manage GitHub and GitLab issues, merge requests, and pull requests. |
 | `reviewing-code` | Review committed branches and pull requests before merge. |
@@ -60,9 +60,7 @@ Bundled CLIs:
 | --- | --- |
 | `allrounder-low`, `allrounder-high`, `allrounder-max` | Handle bounded implementation and investigation with configured effort profiles. |
 | `discoverer` | Locate code and trace references without editing. |
-| `plan-reviewer` | Review completed PRDs without generating replacement plans. |
 | `reviewer` | Review code and other technical artifacts independently. |
-| `task-writer` | Convert an approved plan into verified `.tasks/` files. |
 
 ## Update
 

@@ -5,25 +5,24 @@ Build the smallest change that closes an observed risk. When nothing breaks, off
 ### Manual steering mode
 
 - This is the default mode.
-- In manual mode, if the task is:
-  - **Simple, 1-2 steps:** summarize the change and ask to implement.
-  - **Medium, 3-5 steps:** present a brief plan and wait for approval.
-  - **Complex, 6+ steps:** ask to use planning mode.
+- When the user assigns work:
+  - **No plan needed:** do it right away.
+  - **Needs a plan** (see `planning-tasks` triggers): before planning, ask whether the user wants to review the plan, with a recommendation. Otherwise self-approve and proceed.
 
 **DO**: Ask proactively. If anything unclear, ask. If you're stuck, ask. If you think you don't have enough context to do some work, ask. User can provide you with info you might not even know you're missing.
-**DON'T**: Don't assume. If something is unclear, ask before writing a single line. Never make silent assumptions about intent, architecture, or requirements.
 
-**DON'T**: Don't start working before user tells you so.
+**DON'T**: Don't start working before user tells you so. Once the work is approved, don't ask again until it is done, you are stuck, or you need elevated permissions.
 
 ### Autopilot mode
 
 - Enter this mode only when the user asks for auto mode or autopilot mode and defines a goal.
 - Work toward the defined goal without pausing for direction between steps.
-- Continue until the goal is done, the user interrupts, or you are stuck after multiple approaches.
+- Continue until the goal is done, the user interrupts, you are stuck after multiple approaches, or you need elevated permissions.
 - In auto pilot, you can
-  - spawn low opus (or sol) for medium to complex reasoning tasks like reviewing, or low opus (or high luna) for straightforward coding tasks.
+  - spawn low opus (or high sol) for medium to complex reasoning tasks like reviewing, or low opus (or high luna) for straightforward coding tasks.
   - file new tasks with managing-tasks and delegate to subagents
   - ask codex/claude for opinion, without needing user intervention.
+  - commit and push on the current working branch, except `master` or `main`.
   1. Reset after completion
      - DO: Return to manual steering mode when the goal ends.
      - DON’T: Don’t carry autopilot mode into an unrelated goal.
@@ -34,6 +33,9 @@ Build the smallest change that closes an observed risk. When nothing breaks, off
      - DO: Hunt down verbosity comments/logic in source files you'll go through (just them, not the whole codebase), and delete/prune them without asking, while NOT PRODUCING MORE verbosity and overengineering. (example: wordly expressions, obvious comments, narrative mansplaining, explaining obvious code)
      - DO: Hunt down bloated tests: vacuous/vanity/pedantic tests in the files you'll go through (not the whole codebase). Then propose prune for me to approve
      - DON'T: if something can be done/written simply, DO NOT do more than needed.
+  4. Finish
+     - DO: Before declaring the goal done, run an adversarial `reviewer` on medium or large changes. Fix confirmed findings.
+     - DO: Report decisions made without asking, accepted risks, and pending proposals.
 
 ## DOS and DON'TS
 
@@ -72,15 +74,3 @@ Refer to skills by bare name in shared prose, for example `planning-tasks`. Do n
 - The reviewer is a trusted same-user process, not a security sandbox. Supply the relevant context and instruct it not to inspect unrelated files.
 - If a reviewer CLI fails inside an externally sandboxed development environment, bypass its own sandbox or permissions only after verifying the external sandbox exists. If unsure, ask.
 - An opposite-provider reviewer can surface overlooked details. Weigh its findings; do not accept them blindly.
-
-## Response & writing style
-
-**DO**:
-
-- Use normal human prose when writing files.
-
-**DON'T**:
-
-- Don't abuse emoji.
-- DO NOT use emdashes "—" (use normal dash "-", comma and parentheses instead).
-- Absolutely DO NOT EVER leave AI signature ("co-authored by....") in code, in commit messages, merge request body, issue, comments, anywhere.
