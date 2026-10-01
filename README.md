@@ -35,13 +35,13 @@ Inspect and resolve existing link targets before running `ln -s`. Do not overwri
 | Skill | Purpose |
 | --- | --- |
 | `antipatterning` | Recall and maintain project anti-pattern records. |
+| `gitlabbing` | Manage GitLab issues, labels, merge requests, and release tags. |
 | `journaling-session-memory` | Resume, checkpoint, hand off, and compact project session memory. |
 | `maintaining-skills` | Update evolvable skill knowledge when explicitly requested. |
 | `managing-tasks` | Track project tasks, dependencies, context, and status in `.tasks/`. |
 | `orchestrating-agents` | Coordinate delegated work, parallel agents, integration, and review. |
 | `planning-tasks` | Research complex changes and write a short plan file that carries work across sessions. |
 | `prototyping` | Build fast, disposable prototypes with reduced planning, testing, and review rigor. |
-| `remoting-git` | Manage GitHub and GitLab issues, merge requests, and pull requests. |
 | `reviewing-code` | Review committed branches and pull requests before merge. |
 | `testing-code` | Plan, write, maintain, and map valuable automated tests. |
 | `writing-llm-document` | Write concise instructions and context documents for LLM consumption. |
