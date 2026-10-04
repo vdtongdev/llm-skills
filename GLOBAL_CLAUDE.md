@@ -1,6 +1,18 @@
 ## Working modes
 
-Build the smallest change that closes an observed risk. When nothing breaks, offer an accepted risk instead of speculative machinery.
+When the simplest working solution differs from the one you find most sensible, decide by what the sensible one gains and costs extra:
+
+| Gain                                      | Cheap extra | Expensive extra   |
+| ----------------------------------------- | ----------- | ----------------- |
+| HIGH: closes a real risk or avoids rework | Sensible    | Ask               |
+| MEDIUM                                    | Sensible    | Simplest; mention |
+| LOW                                       | Simplest    | Simplest          |
+
+Cheap means a few lines with no design decision or breaking change. In autopilot, Ask becomes Simplest; mention.
+
+In UI work, visual quality is part of the deliverable: build the sensible design. The table still governs added features.
+
+End each report with what you held back, most impactful first: "Could do X to improve Y; did Z for simplicity." Skip it when nothing was held back.
 
 ### Manual steering mode
 
@@ -11,7 +23,7 @@ Build the smallest change that closes an observed risk. When nothing breaks, off
 
 **DO**: Ask proactively. If anything unclear, ask. If you're stuck, ask. If you think you don't have enough context to do some work, ask. User can provide you with info you might not even know you're missing.
 
-**DON'T**: Don't start working before user tells you so. Once the work is approved, don't ask again until it is done, you are stuck, or you need elevated permissions.
+**DON'T**: Don't start working before user tells you so. Once the work is approved, don't ask again until it is done, you are stuck, a choice falls in the Ask cell, or you need elevated permissions.
 
 ### Autopilot mode
 
@@ -32,10 +44,9 @@ Build the smallest change that closes an observed risk. When nothing breaks, off
   3. Be lean
      - DO: Hunt down verbosity comments/logic in source files you'll go through (just them, not the whole codebase), and delete/prune them without asking, while NOT PRODUCING MORE verbosity and overengineering. (example: wordly expressions, obvious comments, narrative mansplaining, explaining obvious code)
      - DO: Hunt down bloated tests: vacuous/vanity/pedantic tests in the files you'll go through (not the whole codebase). Then propose prune for me to approve
-     - DON'T: if something can be done/written simply, DO NOT do more than needed.
   4. Finish
      - DO: Before declaring the goal done, run an adversarial `reviewer` on medium or large changes. Fix confirmed findings.
-     - DO: Report decisions made without asking, accepted risks, and pending proposals.
+     - DO: Report decisions made without asking, accepted risks, pending proposals, and the held-back list.
 
 ## DOS and DON'TS
 
@@ -44,7 +55,7 @@ Refer to skills by bare name in shared prose, for example `planning-tasks`. Do n
 **DO**: When you've tried multiple approaches with no progress, Stop, Simplify, then Ask the user for guidance.
 **DON'T**: Don't play whack-a-mole, retrying variations of an approach that keeps failing.
 
-**DO**: When asked for a solution or an approach, think carefully and suggest different angles/approaches, and provide pros and cons of each. Sort them by simplicity. Aim to solve problems with the simplest possible solution.
+**DO**: When proposing a solution, give the simplest one that works and the one you find most sensible, with pros and cons. If they are the same, say so in one line.
 **DON'T**: Don't be fixated on one solution.
 
 **DO**: Always quote or cite concrete evidences to back up your claims. Use direct quotes, don't paraphrase.
